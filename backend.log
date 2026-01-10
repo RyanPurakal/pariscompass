@@ -1,0 +1,82 @@
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] -----------------------------< hackru:AI >------------------------------
+[INFO] Building AI 0.0.1-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] >>> spring-boot:3.5.9:run (default-cli) > test-compile @ AI >>>
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ AI ---
+[INFO] Copying 1 resource from src/main/resources to target/classes
+[INFO] Copying 4 resources from src/main/resources to target/classes
+[INFO] 
+[INFO] --- compiler:3.14.1:compile (default-compile) @ AI ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ AI ---
+[INFO] skip non existing resourceDirectory /Users/ryanpurakal/Downloads/hackru-country-data-main/src/test/resources
+[INFO] 
+[INFO] --- compiler:3.14.1:testCompile (default-testCompile) @ AI ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] <<< spring-boot:3.5.9:run (default-cli) < test-compile @ AI <<<
+[INFO] 
+[INFO] 
+[INFO] --- spring-boot:3.5.9:run (default-cli) @ AI ---
+[INFO] Attaching agents: []
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v3.5.9)
+
+2026-01-10T00:55:23.810-05:00  INFO 46798 --- [Paris Compass] [           main] hackru.AI.AiApplication                  : Starting AiApplication using Java 21.0.8 with PID 46798 (/Users/ryanpurakal/Downloads/hackru-country-data-main/target/classes started by ryanpurakal in /Users/ryanpurakal/Downloads/hackru-country-data-main)
+2026-01-10T00:55:23.811-05:00  INFO 46798 --- [Paris Compass] [           main] hackru.AI.AiApplication                  : No active profile set, falling back to 1 default profile: "default"
+2026-01-10T00:55:24.197-05:00  INFO 46798 --- [Paris Compass] [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8081 (http)
+2026-01-10T00:55:24.204-05:00  INFO 46798 --- [Paris Compass] [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-01-10T00:55:24.204-05:00  INFO 46798 --- [Paris Compass] [           main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.50]
+2026-01-10T00:55:24.224-05:00  INFO 46798 --- [Paris Compass] [           main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2026-01-10T00:55:24.224-05:00  INFO 46798 --- [Paris Compass] [           main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 399 ms
+2026-01-10T00:55:24.286-05:00  INFO 46798 --- [Paris Compass] [           main] hackru.AI.config.GeminiConfig            : Initializing Gemini Client with API key (length: 39)
+2026-01-10T00:55:24.367-05:00  INFO 46798 --- [Paris Compass] [           main] hackru.AI.config.GeminiConfig            : ✅ Gemini Client initialized successfully
+2026-01-10T00:55:24.376-05:00  INFO 46798 --- [Paris Compass] [           main] hackru.AI.service.DataLoader             : Data loaded successfully. Countries: 56
+2026-01-10T00:55:24.516-05:00  INFO 46798 --- [Paris Compass] [           main] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 1 endpoint beneath base path '/actuator'
+2026-01-10T00:55:24.541-05:00  INFO 46798 --- [Paris Compass] [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 8081 (http) with context path '/'
+2026-01-10T00:55:24.547-05:00  INFO 46798 --- [Paris Compass] [           main] hackru.AI.AiApplication                  : Started AiApplication in 0.879 seconds (process running for 0.991)
+2026-01-10T00:55:54.508-05:00  INFO 46798 --- [Paris Compass] [nio-8081-exec-1] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-01-10T00:55:54.509-05:00  INFO 46798 --- [Paris Compass] [nio-8081-exec-1] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2026-01-10T00:55:54.510-05:00  INFO 46798 --- [Paris Compass] [nio-8081-exec-1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 1 ms
+2026-01-10T01:01:21.141-05:00  INFO 46798 --- [Paris Compass] [nio-8081-exec-1] hackru.AI.service.GeminiService          : Calling Gemini API for country: CHE
+2026-01-10T01:01:22.232-05:00  INFO 46798 --- [Paris Compass] [nio-8081-exec-2] hackru.AI.service.GeminiService          : Calling Gemini API for country: CHE
+2026-01-10T01:01:24.961-05:00  INFO 46798 --- [Paris Compass] [nio-8081-exec-5] hackru.AI.service.GeminiService          : Calling Gemini API for country: FRA
+2026-01-10T01:01:25.590-05:00  INFO 46798 --- [Paris Compass] [nio-8081-exec-4] hackru.AI.service.GeminiService          : Calling Gemini API for country: FRA
+2026-01-10T01:02:54.882-05:00  INFO 46798 --- [Paris Compass] [nio-8081-exec-3] hackru.AI.service.GeminiService          : Calling Gemini API for country: PRT
+2026-01-10T01:02:55.586-05:00  INFO 46798 --- [Paris Compass] [nio-8081-exec-1] hackru.AI.service.GeminiService          : Calling Gemini API for country: ITA
+2026-01-10T01:12:50.852-05:00  INFO 46798 --- [Paris Compass] [nio-8081-exec-5] hackru.AI.service.GeminiService          : Calling Gemini API for country: AFG
+2026-01-10T01:12:58.557-05:00  INFO 46798 --- [Paris Compass] [nio-8081-exec-9] hackru.AI.service.GeminiService          : Calling Gemini API for country: ARG
+2026-01-10T01:13:08.066-05:00  INFO 46798 --- [Paris Compass] [nio-8081-exec-3] hackru.AI.service.GeminiService          : Calling Gemini API for country: ARG
+2026-01-10T01:13:16.519-05:00  INFO 46798 --- [Paris Compass] [nio-8081-exec-4] hackru.AI.service.GeminiService          : Returning cached projection for ARG
+2026-01-10T01:15:45.486-05:00  INFO 46798 --- [Paris Compass] [io-8081-exec-10] hackru.AI.service.GeminiService          : Calling Gemini API for country: USA
+2026-01-10T01:16:33.544-05:00  INFO 46798 --- [Paris Compass] [nio-8081-exec-2] hackru.AI.service.GeminiService          : Returning cached projection for AFG
+2026-01-10T01:16:47.679-05:00  INFO 46798 --- [Paris Compass] [nio-8081-exec-1] hackru.AI.service.GeminiService          : Returning cached projection for ARG
+2026-01-10T01:16:48.691-05:00  INFO 46798 --- [Paris Compass] [nio-8081-exec-7] hackru.AI.service.GeminiService          : Calling Gemini API for country: BGD
+2026-01-10T01:16:50.858-05:00  INFO 46798 --- [Paris Compass] [nio-8081-exec-8] hackru.AI.service.GeminiService          : Returning cached projection for AFG
+2026-01-10T01:19:04.536-05:00  INFO 46798 --- [Paris Compass] [nio-8081-exec-2] hackru.AI.service.GeminiService          : Calling Gemini API for country: IND
+2026-01-10T01:19:17.455-05:00  INFO 46798 --- [Paris Compass] [nio-8081-exec-4] hackru.AI.service.GeminiService          : Calling Gemini API for country: COL
+2026-01-10T01:19:33.384-05:00  INFO 46798 --- [Paris Compass] [nio-8081-exec-3] hackru.AI.service.GeminiService          : Calling Gemini API for country: VEN
+2026-01-10T01:19:44.064-05:00  INFO 46798 --- [Paris Compass] [nio-8081-exec-6] hackru.AI.service.GeminiService          : Calling Gemini API for country: NGA
+2026-01-10T01:22:23.453-05:00  INFO 46798 --- [Paris Compass] [nio-8081-exec-5] hackru.AI.service.GeminiService          : Returning cached projection for FRA
+2026-01-10T01:24:57.813-05:00  INFO 46798 --- [Paris Compass] [nio-8081-exec-1] hackru.AI.service.GeminiService          : Calling Gemini API for country: KEN
+2026-01-10T01:27:13.887-05:00  INFO 46798 --- [Paris Compass] [nio-8081-exec-9] hackru.AI.service.GeminiService          : Returning cached projection for NGA
+2026-01-10T01:28:30.604-05:00  INFO 46798 --- [Paris Compass] [nio-8081-exec-1] hackru.AI.service.GeminiService          : Returning cached projection for NGA
+2026-01-10T01:28:59.877-05:00  INFO 46798 --- [Paris Compass] [nio-8081-exec-9] hackru.AI.service.GeminiService          : Calling Gemini API for country: CAN
+2026-01-10T01:31:25.992-05:00  INFO 46798 --- [Paris Compass] [nio-8081-exec-1] hackru.AI.service.GeminiService          : Returning cached projection for USA
+2026-01-10T01:31:28.407-05:00  INFO 46798 --- [Paris Compass] [nio-8081-exec-6] hackru.AI.service.GeminiService          : Calling Gemini API for country: MEX
+2026-01-10T01:31:30.614-05:00  INFO 46798 --- [Paris Compass] [nio-8081-exec-4] hackru.AI.service.GeminiService          : Returning cached projection for USA
+2026-01-10T01:31:40.368-05:00  INFO 46798 --- [Paris Compass] [nio-8081-exec-3] hackru.AI.service.GeminiService          : Returning cached projection for USA
+2026-01-10T01:31:44.241-05:00  INFO 46798 --- [Paris Compass] [nio-8081-exec-8] hackru.AI.service.GeminiService          : Returning cached projection for MEX
