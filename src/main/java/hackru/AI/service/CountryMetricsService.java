@@ -10,6 +10,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+/**
+ * Assembles a CountryMetrics snapshot from the raw DataLoader maps.
+ * Picks the latest available year across all three datasets rather than requiring
+ * every dataset to have data for the same year.
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor

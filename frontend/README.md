@@ -1,16 +1,42 @@
-# React + Vite
+# frontend — React SPA
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Single-page application built with React 19 and Vite. Displays an interactive world map and shows per-country climate metrics with AI projections.
 
-Currently, two official plugins are available:
+## Stack
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **React 19** — component model and state
+- **Vite** — dev server (port 5173) and bundler
+- **Leaflet / React Leaflet** — interactive tile map
+- **Fetch API** — all backend calls (no HTTP client library)
 
-## React Compiler
+## Directory layout
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+```
+frontend/
+├── index.html              # HTML shell that Vite injects the bundle into
+├── vite.config.js          # Vite config (no proxy — backend URL is hardcoded in App.jsx)
+├── eslint.config.js        # Lint rules
+├── package.json
+└── src/
+    ├── main.jsx            # React entry point — mounts <App /> into #root
+    ├── App.jsx             # Entire UI: map, country sidebar, data panel, components
+    ├── countryCoordinates.js # Static ISO3 → [lat, lng] lookup table
+    ├── App.css             # Component-scoped styles (CSS variables, layout, cards)
+    └── index.css           # Global reset and base styles
+```
 
-## Expanding the ESLint configuration
+## Running locally
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+```bash
+npm install
+npm run dev   # http://localhost:5173
+```
+
+Backend must be running on `http://localhost:8081` (see root README).
+
+## Key design notes
+
+- All UI state lives in the single `App` component (`useState`). There is intentionally no state management library.
+- The backend URL (`http://localhost:8081/api`) is a module-level constant in `App.jsx`. Change it there for staging/production.
+- Country markers on the map are driven by `countryCoordinates.js`. Countries absent from that file will appear in the sidebar list but will have no map marker.
+- The Leaflet default marker icon path is patched at module load time (Vite doesn't bundle assets the same way Webpack does).

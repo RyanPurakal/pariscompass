@@ -1,3 +1,5 @@
+// Static lookup table: ISO3 code → [latitude, longitude] for map marker placement.
+// Add an entry here whenever a new country is added to src/main/resources/data/countries.csv.
 // Approximate center coordinates for countries (ISO3 -> [lat, lng])
 export const countryCoordinates = {
   USA: [39.8283, -98.5795],

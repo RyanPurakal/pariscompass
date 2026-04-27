@@ -1,3 +1,5 @@
+// Entry point for the entire React UI. See src/README.md for the component and data-flow overview.
+// API_BASE and countryCoordinates are the two external dependencies — change the base URL here for staging/production.
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
 import L from 'leaflet'

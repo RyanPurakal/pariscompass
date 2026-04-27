@@ -9,6 +9,10 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.CorsFilter;
 
+/**
+ * Allows the Vite dev server (localhost:5173) to call the backend.
+ * Add staging/production origins here before deploying.
+ */
 @Configuration
 public class CorsConfig {
 

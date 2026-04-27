@@ -204,25 +204,54 @@ Data is loaded into memory at application startup for fast access.
 ## Project Structure
 
 ```
-hackru-country-data-main/
-├── src/
+paris-compass/
+├── src/                              # Spring Boot backend (Java 21)
 │   ├── main/
 │   │   ├── java/hackru/AI/
-│   │   │   ├── config/          # Configuration classes
-│   │   │   ├── controller/      # REST controllers
-│   │   │   ├── model/           # Data models/DTOs
-│   │   │   └── service/         # Business logic
+│   │   │   ├── AiApplication.java    # Entry point — boots Spring context
+│   │   │   ├── config/               # Bean wiring: Gemini client, CORS rules
+│   │   │   ├── controller/           # HTTP layer — maps URLs to services
+│   │   │   ├── model/                # DTOs shared between controller & service
+│   │   │   └── service/              # Core logic: data loading, metrics, AI calls
 │   │   └── resources/
-│   │       ├── data/            # CSV data files
+│   │       ├── data/                 # CSV datasets loaded at startup
 │   │       └── application.properties
-│   └── test/                    # Unit tests
-├── frontend/                    # React frontend
+│   └── test/                         # Unit tests (JUnit 5 + Mockito)
+├── frontend/                         # React 19 + Vite SPA
 │   ├── src/
-│   │   ├── App.jsx             # Main React component
-│   │   └── App.css             # Styles
+│   │   ├── App.jsx                   # Full UI: map, country list, data panel
+│   │   ├── countryCoordinates.js     # ISO3 → [lat, lng] lookup table
+│   │   ├── main.jsx                  # React entry point
+│   │   └── App.css / index.css       # Global styles and component styles
 │   └── package.json
-└── pom.xml                      # Maven configuration
+└── pom.xml                           # Maven build configuration
 ```
+
+## Architecture & Data Flow
+
+```
+User clicks country
+        │
+        ▼
+  React (App.jsx)
+  POST /api/country/{iso3}/projection
+        │
+        ▼
+  GeminiController          ← HTTP boundary: validates iso3, composes response
+        │
+        ├──► CountryMetricsService   ← looks up latest CSV data for the country
+        │         │
+        │         └──► DataLoader    ← in-memory maps loaded from CSV at startup
+        │
+        └──► GeminiService           ← calls Gemini API; caches result 1 hr per country
+                  │
+                  └──► Google Gemini API (external)
+```
+
+**Key design choices:**
+- All CSV data is loaded into memory at startup — no database, no per-request I/O.
+- Gemini projections are cached per country for 1 hour to avoid redundant API calls.
+- CORS is locked to `localhost:5173` (Vite default); update `CorsConfig` for production.
 
 ## Configuration
 

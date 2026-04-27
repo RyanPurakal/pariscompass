@@ -12,6 +12,10 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
+/**
+ * HTTP boundary. Translates /api requests into service calls; contains no business logic.
+ * All ISO3 codes are uppercased here before passing to services.
+ */
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor

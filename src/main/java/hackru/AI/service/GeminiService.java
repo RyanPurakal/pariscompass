@@ -14,6 +14,11 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * External API boundary. All traffic to Google Gemini flows through this class.
+ * Results are cached in-process (ConcurrentHashMap, 1-hour TTL) to avoid
+ * redundant API calls for the same country within a short window.
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor

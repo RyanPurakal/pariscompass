@@ -8,6 +8,11 @@ import com.google.genai.Client;
 
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * Creates the Gemini Client bean. Reads API key from environment at startup;
+ * throws IllegalStateException immediately if the key is absent so the app
+ * fails loudly rather than failing on the first real request.
+ */
 @Slf4j
 @Configuration
 public class GeminiConfig {
