@@ -1,0 +1,7 @@
+# Automated tests. The key is forced empty so a developer's real GEMINI_API_KEY
+# can never make tests call the live API. Gemini is mocked where it is needed.
+app:
+  gemini:
+    api-key: ""
+  cors:
+    allowed-origins: http://localhost:5173

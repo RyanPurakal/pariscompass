@@ -2,12 +2,12 @@ package com.ryanpurakal.pariscompass.service;
 
 import com.google.genai.Client;
 import com.google.genai.types.GenerateContentResponse;
-import com.ryanpurakal.pariscompass.config.GeminiConfig;
+import com.ryanpurakal.pariscompass.config.AppProperties;
 import com.ryanpurakal.pariscompass.exception.ProjectionUnavailableException;
 import com.ryanpurakal.pariscompass.model.CountryMetrics;
 import com.ryanpurakal.pariscompass.model.ProjectionResponse;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -19,14 +19,22 @@ import java.util.concurrent.TimeUnit;
  * External API boundary. All traffic to Google Gemini flows through this class.
  * Results are cached in-process (ConcurrentHashMap, 1-hour TTL) to avoid
  * redundant API calls for the same country within a short window.
+ * The Client bean is optional: without an API key, projections return 503.
  */
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class GeminiService {
     private final Client client;
-    private final GeminiConfig config;
-    
+    private final String modelName;
+
+    public GeminiService(ObjectProvider<Client> clientProvider, AppProperties properties) {
+        this.client = clientProvider.getIfAvailable();
+        this.modelName = properties.gemini().model();
+        if (client == null) {
+            log.warn("GEMINI_API_KEY not set: projection endpoint will return 503");
+        }
+    }
+
     // Cache: iso3 -> (timestamp, projection response)
     private final Map<String, CacheEntry> cache = new ConcurrentHashMap<>();
     private static final long CACHE_TTL_HOURS = 1;
@@ -38,13 +46,16 @@ public class GeminiService {
             log.info("Returning cached projection for {}", iso3);
             return cached.response();
         }
+        if (client == null) {
+            throw new ProjectionUnavailableException("AI projections are not configured on this server.");
+        }
 
         try {
             String prompt = buildPrompt(metrics);
             log.info("Calling Gemini API for country: {}", iso3);
             
             GenerateContentResponse response = client.models.generateContent(
-                    config.getModelName(),
+                    modelName,
                     prompt,
                     null);
 
@@ -53,7 +64,7 @@ public class GeminiService {
             ProjectionResponse projectionResponse = ProjectionResponse.builder()
                     .country(metrics.getName())
                     .projection(projectionText)
-                    .model(config.getModelName())
+                    .model(modelName)
                     .generatedAt(Instant.now())
                     .build();
 

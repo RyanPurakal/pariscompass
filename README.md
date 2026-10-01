@@ -240,25 +240,22 @@ User clicks country
 **Key design choices:**
 - All CSV data is loaded into memory at startup — no database, no per-request I/O.
 - Gemini projections are cached per country for 1 hour to avoid redundant API calls.
-- CORS is locked to `localhost:5173` (Vite default); update `CorsConfig` for production.
+- CORS origins come from `CORS_ALLOWED_ORIGINS` (dev default `http://localhost:5173`).
 
 ## Configuration
 
-### Backend Configuration (`application.properties`)
+Settings live in `src/main/resources/application.yml` with per-profile overrides (`application-dev.yml`, `application-test.yml`, `application-prod.yml`). Every secret or deployment-specific value is an environment variable; see `.env.example` and `frontend/.env.example`.
 
-```properties
-spring.application.name=Paris Compass
-server.port=8081
-gemini.model=gemini-2.5-flash
-management.endpoints.web.exposure.include=health
-management.endpoint.health.show-details=always
-```
+| Variable | Default | Notes |
+|----------|---------|-------|
+| `SPRING_PROFILES_ACTIVE` | `dev` | `dev`, `test` or `prod` |
+| `GEMINI_API_KEY` | none | Optional in dev (projections return 503), required in prod |
+| `GEMINI_MODEL` | `gemini-2.5-flash` | |
+| `CORS_ALLOWED_ORIGINS` | `http://localhost:5173` in dev | Comma-separated; required in prod, `*` rejected |
+| `PORT` | `8081` | |
+| `VITE_API_BASE_URL` (frontend) | `http://localhost:8081/api` | Baked into the JS bundle at build time |
 
-### Gemini AI Configuration
-
-- Model: `gemini-2.5-flash` (configurable via `gemini.model` property)
-- API Key: Set via `GEMINI_API_KEY` environment variable
-- Caching: Projections are cached for 1 hour per country
+Prod refuses to start if a required variable is missing, and reports all of them at once.
 
 ## Testing
 
@@ -287,7 +284,7 @@ npm test
 
 ### CORS Configuration
 
-CORS is enabled for `http://localhost:5173` (Vite default). To change this, update `CorsConfig.java`.
+Allowed origins come from `CORS_ALLOWED_ORIGINS` (comma-separated). Dev defaults to `http://localhost:5173`.
 
 ### Error Handling
 
@@ -320,12 +317,12 @@ Missing data fields return `null` in JSON responses.
 ### Backend won't start
 - Ensure Java 21 is installed: `java -version`
 - Check if port 8081 is available
-- Verify `GEMINI_API_KEY` is set
+- In prod, `GEMINI_API_KEY` and `CORS_ALLOWED_ORIGINS` must be set (dev runs without them)
 
 ### Frontend can't connect to backend
 - Ensure backend is running on port 8081
 - Check CORS configuration matches frontend URL
-- Verify API calls use correct base URL (`http://localhost:8081/api`)
+- Verify `VITE_API_BASE_URL` points at the backend (default `http://localhost:8081/api`)
 
 ### No data showing
 - Check CSV files exist in `src/main/resources/data/`

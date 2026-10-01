@@ -26,7 +26,4 @@ Spring Boot 3.5 application serving climate metrics and AI projections.
 
 ## Configuration
 
-All tuneable values live in `src/main/resources/application.properties`:
-- `server.port` — backend listens on 8081
-- `gemini.model` — which Gemini model variant to call
-- `GEMINI_API_KEY` environment variable — required at startup
+Settings live in `src/main/resources/application.yml` plus one file per profile (`dev`, `test`, `prod`), bound to the typed `config/AppProperties`. See `config/README.md` for the profile matrix and `/.env.example` for every environment variable.

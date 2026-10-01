@@ -1,0 +1,7 @@
+# Production. No defaults for deployment-specific values: startup fails if
+# GEMINI_API_KEY or CORS_ALLOWED_ORIGINS is missing (validated in AppProperties).
+app:
+  gemini:
+    required: true
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:}

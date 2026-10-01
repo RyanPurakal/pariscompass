@@ -1,5 +1,5 @@
 // Entry point for the entire React UI. See src/README.md for the component and data-flow overview.
-// API_BASE and countryCoordinates are the two external dependencies — change the base URL here for staging/production.
+// API_BASE (from VITE_API_BASE_URL) and countryCoordinates are the two external dependencies.
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
 import L from 'leaflet'
@@ -27,7 +27,8 @@ L.Icon.Default.mergeOptions({
   shadowSize: [41, 41]
 })
 
-const API_BASE = 'http://localhost:8081/api'
+// Set VITE_API_BASE_URL per environment (see frontend/.env.example); defaults to the local backend.
+const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8081/api'
 
 // Component to center map on country
 function MapCenter({ center, zoom }) {

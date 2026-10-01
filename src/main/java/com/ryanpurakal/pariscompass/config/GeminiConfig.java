@@ -1,50 +1,35 @@
 package com.ryanpurakal.pariscompass.config;
 
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-
 import com.google.genai.Client;
-
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Condition;
+import org.springframework.context.annotation.ConditionContext;
+import org.springframework.context.annotation.Conditional;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.core.type.AnnotatedTypeMetadata;
+import org.springframework.util.StringUtils;
 
 /**
- * Creates the Gemini Client bean. Reads API key from environment at startup;
- * throws IllegalStateException immediately if the key is absent so the app
- * fails loudly rather than failing on the first real request.
+ * Creates the Gemini Client bean only when an API key is configured. Without a key the bean
+ * is absent and GeminiService answers 503, so dev and test run without credentials.
+ * Prod refuses to start without a key (see AppProperties.Gemini#required).
  */
 @Slf4j
 @Configuration
 public class GeminiConfig {
-    
-    @Value("${gemini.model:gemini-2.5-flash}")
-    private String modelName;
 
     @Bean
-    public Client geminiClient() {
-        // Check both GEMINI_API_KEY (user preference) and GOOGLE_API_KEY (library default)
-        String apiKey = System.getenv("GEMINI_API_KEY");
-        if (apiKey == null || apiKey.isBlank()) {
-            apiKey = System.getenv("GOOGLE_API_KEY");
-        }
-        if (apiKey == null || apiKey.isBlank()) {
-            log.error("GEMINI_API_KEY or GOOGLE_API_KEY environment variable not set. Cannot initialize Gemini Client.");
-            throw new IllegalStateException("GEMINI_API_KEY or GOOGLE_API_KEY environment variable must be set");
-        }
-        log.info("Initializing Gemini Client with API key (length: {})", apiKey.length());
-        
-        try {
-            // Use Client.builder().apiKey() to pass the API key directly
-            Client client = Client.builder().apiKey(apiKey).build();
-            log.info("✅ Gemini Client initialized successfully");
-            return client;
-        } catch (Exception e) {
-            log.error("❌ Failed to create Gemini Client", e);
-            throw new RuntimeException("Failed to initialize Gemini Client. Check GEMINI_API_KEY or GOOGLE_API_KEY environment variable.", e);
-        }
+    @Conditional(ApiKeyPresent.class)
+    public Client geminiClient(AppProperties properties) {
+        log.info("Gemini client enabled (model: {})", properties.gemini().model());
+        return Client.builder().apiKey(properties.gemini().apiKey()).build();
     }
-    
-    public String getModelName() {
-        return modelName;
+
+    static class ApiKeyPresent implements Condition {
+        @Override
+        public boolean matches(ConditionContext context, AnnotatedTypeMetadata metadata) {
+            return StringUtils.hasText(context.getEnvironment().getProperty("app.gemini.api-key"));
+        }
     }
 }

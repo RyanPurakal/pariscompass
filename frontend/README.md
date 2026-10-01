@@ -37,6 +37,6 @@ Backend must be running on `http://localhost:8081` (see root README).
 ## Key design notes
 
 - All UI state lives in the single `App` component (`useState`). There is intentionally no state management library.
-- The backend URL (`http://localhost:8081/api`) is a module-level constant in `App.jsx`. Change it there for staging/production.
+- The backend URL comes from `VITE_API_BASE_URL` (see `.env.example`), defaulting to `http://localhost:8081/api`.
 - Country markers on the map are driven by `countryCoordinates.js`. Countries absent from that file will appear in the sidebar list but will have no map marker.
 - The Leaflet default marker icon path is patched at module load time (Vite doesn't bundle assets the same way Webpack does).

@@ -1,0 +1,9 @@
+# Local development. Runs without a Gemini key (projections return 503).
+management:
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    com.ryanpurakal.pariscompass: DEBUG

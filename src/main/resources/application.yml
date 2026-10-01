@@ -1,0 +1,27 @@
+# Shared defaults. Profile files (application-{dev,test,prod}.yml) override these.
+# Every secret or deployment-specific value comes from an environment variable.
+spring:
+  application:
+    name: paris-compass
+  profiles:
+    default: dev
+
+server:
+  port: ${PORT:8081}
+
+app:
+  gemini:
+    model: ${GEMINI_MODEL:gemini-2.5-flash}
+    api-key: ${GEMINI_API_KEY:${GOOGLE_API_KEY:}}
+    required: false
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
