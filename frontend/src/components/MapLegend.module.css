@@ -1,0 +1,77 @@
+.legend {
+  margin: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  font-weight: 600;
+}
+
+.unit {
+  font-weight: 400;
+  color: var(--ink-3);
+}
+
+.note {
+  flex-basis: 100%;
+  font-weight: 400;
+  font-size: var(--step--1);
+  color: var(--ink-3);
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 16px 28px;
+}
+
+.scale {
+  display: flex;
+  margin: 0;
+  padding: 0 0 18px;
+  list-style: none;
+}
+
+.cell {
+  position: relative;
+  width: clamp(30px, 7vw, 56px);
+}
+
+.cell + .cell {
+  margin-left: 2px;
+}
+
+.swatch {
+  display: block;
+  height: 12px;
+  border-radius: 3px;
+}
+
+.noData .swatch {
+  width: 28px;
+}
+
+.tick {
+  position: absolute;
+  top: 16px;
+  right: 0;
+  transform: translateX(50%);
+  font-size: 0.72rem;
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.noData {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--step--1);
+  color: var(--ink-2);
+}

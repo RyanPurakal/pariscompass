@@ -1,0 +1,63 @@
+/*
+ * Design tokens. Light is the default; <html data-theme="dark"> switches every token.
+ * Text colors are checked for WCAG contrast on their backgrounds (all >= 4.5:1).
+ * Chart surfaces and ramps come from the dataviz reference palette (src/lib/palette.ts).
+ */
+:root {
+  color-scheme: light;
+
+  --font-display: 'Newsreader Variable', 'Iowan Old Style', Georgia, serif;
+  --font-ui: 'Atkinson Hyperlegible Next Variable', system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  --page: #f4f1ea;
+  --surface: #fcfcfb;
+  --surface-sunken: #ebe7dd;
+  --ink: #14120f;
+  --ink-2: #52514e;
+  --ink-3: #6a6862;
+  --hairline: #e1e0d9;
+  --rule: #c3c2b7;
+  --accent: #b4371f;
+  --accent-ink: #ffffff;
+  --focus: #1c5cab;
+  --shadow: 0 1px 0 rgba(20, 18, 15, 0.04), 0 8px 24px -12px rgba(20, 18, 15, 0.18);
+
+  --status-good: #0ca30c;
+  --status-warning: #fab219;
+  --status-critical: #d03b3b;
+
+  --radius: 10px;
+  --radius-sm: 6px;
+  --gutter: 16px;
+  --content: 1280px;
+
+  --step--1: 0.8125rem;
+  --step-0: 1rem;
+  --step-1: 1.1875rem;
+  --step-2: 1.5rem;
+  --step-3: clamp(1.75rem, 1.2rem + 2vw, 2.5rem);
+  --step-4: clamp(2.25rem, 1.4rem + 3.6vw, 3.75rem);
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
+  --page: #0f0f0e;
+  --surface: #1a1a19;
+  --surface-sunken: #141413;
+  --ink: #f5f3ee;
+  --ink-2: #c3c2b7;
+  --ink-3: #a3a19a;
+  --hairline: #2c2c2a;
+  --rule: #383835;
+  --accent: #f2876a;
+  --accent-ink: #0f0f0e;
+  --focus: #86b6ef;
+  --shadow: 0 1px 0 rgba(0, 0, 0, 0.4), 0 10px 30px -14px rgba(0, 0, 0, 0.7);
+}
+
+@media (min-width: 720px) {
+  :root {
+    --gutter: 32px;
+  }
+}

@@ -18,8 +18,10 @@ A full-stack web application that provides country-specific climate metrics and 
 - **Testcontainers** for integration tests against a real Postgres
 
 ### Frontend
-- **React 19** + **Vite**
-- **Leaflet** / **React Leaflet** for the map
+- **React 19** + **TypeScript** (strict) + **Vite**, **React Router**
+- **TanStack Query** for server state; API types generated from the OpenAPI spec (`openapi-typescript` + `openapi-fetch`)
+- **d3-geo** SVG choropleth (Equal Earth projection, Natural Earth shapes) and **Recharts** time series
+- Details and design decisions: [frontend/README.md](frontend/README.md)
 
 ## Prerequisites
 
@@ -40,7 +42,7 @@ SPRING_PROFILES_ACTIVE=dev,etl ./mvnw spring-boot:run
 # 3. Run the API on http://localhost:8081 (optionally export GEMINI_API_KEY first)
 ./run-backend.sh
 
-# 4. Run the frontend on http://localhost:5173 (new terminal)
+# 4. Run the frontend on http://localhost:5173 (new terminal; VITE_API_URL defaults to http://localhost:8081)
 cd frontend && npm install && npm run dev
 ```
 
@@ -148,7 +150,7 @@ pariscompass/
 │   ├── db/migration/  # Flyway migrations (schema owner)
 │   └── application*.yml
 ├── src/test/          # Unit tests + Testcontainers integration tests, ETL fixture CSVs
-├── frontend/          # React 19 + Vite SPA
+├── frontend/          # React 19 + TypeScript SPA (see frontend/README.md)
 ├── docker-compose.yml # Local Postgres
 └── MEASUREMENTS.md    # Every reported number and the command that produced it
 ```
@@ -162,7 +164,7 @@ pariscompass/
    PostgreSQL ── country, metric, observation(iso3, metric_code, year, value)
         ▲
         │  JPA reads
-  Analytics / Alignment / Metrics services ◄── controllers ◄── React (App.jsx)
+  Analytics / Alignment / Metrics services ◄── controllers ◄── React SPA (TanStack Query)
                                                     │
                ProjectionService ◄──────────────────┘ (rate limited)
                  │  prompt from history + alignment score
@@ -196,7 +198,7 @@ Settings live in `src/main/resources/application.yml` with per-profile overrides
 | `RATE_LIMIT_PER_CLIENT_PER_MINUTE` | `5` | Projection requests per client IP |
 | `RATE_LIMIT_GLOBAL_PER_HOUR` | `100` | Projection requests across all clients |
 | `PORT` | `8081` | |
-| `VITE_API_BASE_URL` (frontend) | `http://localhost:8081/api` | Baked into the JS bundle at build time |
+| `VITE_API_URL` (frontend) | `http://localhost:8081` | Backend origin, baked into the JS bundle at build time |
 
 Prod refuses to start if a required variable is missing, and reports all of them at once.
 
@@ -255,7 +257,7 @@ Missing data fields return `null` in JSON responses.
 ### Frontend can't connect to backend
 - Ensure backend is running on port 8081
 - Check CORS configuration matches frontend URL
-- Verify `VITE_API_BASE_URL` points at the backend (default `http://localhost:8081/api`)
+- Verify `VITE_API_URL` points at the backend origin (default `http://localhost:8081`)
 
 ### No data showing
 - Run the ETL: `SPRING_PROFILES_ACTIVE=dev,etl ./mvnw spring-boot:run`
@@ -280,6 +282,6 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 ## Acknowledgments
 
 - Climate data: Our World in Data, Global Carbon Project, Ember, Energy Institute, Copernicus Climate Change Service (ERA5)
-- Mapping: Leaflet and OpenStreetMap
+- Map boundaries: Natural Earth (public domain)
 - AI: Google Gemini
 

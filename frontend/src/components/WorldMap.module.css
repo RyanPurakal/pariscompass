@@ -1,0 +1,74 @@
+.root {
+  position: relative;
+  transition: opacity 200ms ease;
+}
+
+.root[data-stale] {
+  opacity: 0.55;
+}
+
+.svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  touch-action: manipulation;
+}
+
+/* The surface-colored stroke is the 2px gap that separates neighboring fills. */
+.country,
+.inert {
+  stroke: var(--surface);
+  stroke-width: 0.6;
+  stroke-linejoin: round;
+}
+
+.country {
+  cursor: pointer;
+  transition: fill 300ms ease;
+}
+
+.country:focus {
+  outline: none;
+}
+
+/* Drawn on top so the highlight is never hidden under a neighbor. */
+.outline {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 1.6;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+
+.tooltip {
+  position: absolute;
+  z-index: 5;
+  transform: translate(14px, -50%);
+  display: grid;
+  gap: 1px;
+  min-width: 150px;
+  padding: 10px 12px;
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow);
+  pointer-events: none;
+}
+
+.tooltip[data-flip] {
+  transform: translate(calc(-100% - 14px), -50%);
+}
+
+.tooltipValue {
+  font-size: var(--step-1);
+  font-weight: 700;
+}
+
+.tooltipName {
+  color: var(--ink-2);
+}
+
+.tooltipMeta {
+  color: var(--ink-3);
+  font-size: var(--step--1);
+}

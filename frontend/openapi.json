@@ -1,0 +1,1232 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Paris Compass API",
+    "description": "Country-level CO2, electricity and temperature data from Our World in Data and Copernicus ERA5, a deterministic Paris alignment score, and schema-validated five-year CO2 projections.\n\nEvery error is RFC 9457 `application/problem+json` with a stable `code` field.",
+    "license": {
+      "name": "Data: CC BY 4.0 (Our World in Data)",
+      "url": "https://creativecommons.org/licenses/by/4.0/"
+    },
+    "version": "v1"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:18081",
+      "description": "Generated server url"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Metrics",
+      "description": "Metric catalog, rankings and multi-country comparison"
+    },
+    {
+      "name": "Countries",
+      "description": "Per-country metrics, time series, alignment score and projections"
+    }
+  ],
+  "paths": {
+    "/api/countries/{iso3}/projection": {
+      "post": {
+        "tags": [
+          "Countries"
+        ],
+        "summary": "Five-year CO2 projection (rate limited)",
+        "description": "Returns a stored projection when the inputs are unchanged (cached=true). Otherwise asks the model for schema-validated JSON, retries once, and falls back to labeled trend extrapolation.",
+        "operationId": "getCountryProjection",
+        "parameters": [
+          {
+            "name": "iso3",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^[A-Za-z]{3}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Metrics snapshot plus projection",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CountryProjectionResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "COUNTRY_NOT_FOUND",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "INSUFFICIENT_DATA: fewer than 6 of the last 10 years of CO2 data",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED, with a Retry-After header",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/rankings": {
+      "get": {
+        "tags": [
+          "Metrics"
+        ],
+        "summary": "Countries ranked by one metric in one year",
+        "description": "year defaults to the latest year with at least 90% of the metric's best coverage. Ties share a rank.",
+        "operationId": "rankings",
+        "parameters": [
+          {
+            "name": "metric",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "co2_per_capita_t"
+          },
+          {
+            "name": "year",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "maximum": 2100,
+              "minimum": 1750,
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "desc"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "maximum": 300,
+              "minimum": 1,
+              "type": "integer",
+              "format": "int32",
+              "default": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ranked countries",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RankingResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "UNKNOWN_METRIC, INVALID_ORDER, or a parameter out of range",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/metrics": {
+      "get": {
+        "tags": [
+          "Metrics"
+        ],
+        "summary": "Metric catalog with units, sources and data coverage",
+        "operationId": "metrics",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MetricInfo"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/countries": {
+      "get": {
+        "tags": [
+          "Countries"
+        ],
+        "summary": "List every country with ingested data, sorted by name",
+        "operationId": "getAllCountries",
+        "responses": {
+          "200": {
+            "description": "Countries",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CountryInfo"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/countries/{iso3}": {
+      "get": {
+        "tags": [
+          "Countries"
+        ],
+        "summary": "Latest value of each headline metric, with the year of each value",
+        "operationId": "getCountryMetrics",
+        "parameters": [
+          {
+            "name": "iso3",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^[A-Za-z]{3}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Metrics snapshot",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CountryMetrics"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "iso3 is not three letters",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "COUNTRY_NOT_FOUND",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/countries/{iso3}/series": {
+      "get": {
+        "tags": [
+          "Countries"
+        ],
+        "summary": "Time series for one country over a year range",
+        "operationId": "getCountrySeries",
+        "parameters": [
+          {
+            "name": "iso3",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^[A-Za-z]{3}$",
+              "type": "string"
+            }
+          },
+          {
+            "name": "metrics",
+            "in": "query",
+            "description": "Comma-separated metric codes from GET /api/metrics; default all",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "maximum": 2100,
+              "minimum": 1750,
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "maximum": 2100,
+              "minimum": 1750,
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "One series per requested metric; years without data are absent",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CountrySeriesResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "UNKNOWN_METRIC, INVALID_YEAR_RANGE, or a parameter out of range",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "COUNTRY_NOT_FOUND",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/countries/{iso3}/projections": {
+      "get": {
+        "tags": [
+          "Countries"
+        ],
+        "summary": "Stored projections for a country, newest first",
+        "operationId": "getProjectionHistory",
+        "parameters": [
+          {
+            "name": "iso3",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^[A-Za-z]{3}$",
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer",
+              "format": "int32",
+              "default": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Stored projections",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ProjectionResponse"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "COUNTRY_NOT_FOUND",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/countries/{iso3}/alignment": {
+      "get": {
+        "tags": [
+          "Countries"
+        ],
+        "summary": "Deterministic Paris alignment score (formula v1, see SCORING.md)",
+        "description": "Computed in Java from historical data. score and band are null when the emissions trend cannot be computed; reason explains why.",
+        "operationId": "getAlignment",
+        "parameters": [
+          {
+            "name": "iso3",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^[A-Za-z]{3}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Score with every component's input, sub-score and weight",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlignmentResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "COUNTRY_NOT_FOUND",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/compare": {
+      "get": {
+        "tags": [
+          "Metrics"
+        ],
+        "summary": "One metric for 2 to 4 countries, side by side",
+        "operationId": "compare",
+        "parameters": [
+          {
+            "name": "countries",
+            "in": "query",
+            "description": "2 to 4 comma-separated ISO3 codes",
+            "required": true,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "example": "USA,CHN,IND"
+          },
+          {
+            "name": "metric",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "maximum": 2100,
+              "minimum": 1750,
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "maximum": 2100,
+              "minimum": 1750,
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "One series per country, in request order",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ComparisonResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "UNKNOWN_METRIC, INVALID_COUNTRY_LIST, INVALID_YEAR_RANGE",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "COUNTRY_NOT_FOUND",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "CountryMetrics": {
+        "required": [
+          "co2PerCapita",
+          "co2TotalMt",
+          "iso3",
+          "name",
+          "renewablesSharePct",
+          "source",
+          "temperatureAnomalyC",
+          "years"
+        ],
+        "type": "object",
+        "properties": {
+          "iso3": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "co2PerCapita": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "co2TotalMt": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "temperatureAnomalyC": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "renewablesSharePct": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "years": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          "source": {
+            "$ref": "#/components/schemas/SourceInfo"
+          }
+        }
+      },
+      "CountryProjectionResponse": {
+        "required": [
+          "metrics",
+          "projection"
+        ],
+        "type": "object",
+        "properties": {
+          "metrics": {
+            "$ref": "#/components/schemas/CountryMetrics"
+          },
+          "projection": {
+            "$ref": "#/components/schemas/ProjectionResponse"
+          }
+        }
+      },
+      "ProjectionOutput": {
+        "required": [
+          "co2Direction",
+          "confidence",
+          "keyDrivers",
+          "projectedCo2Mt",
+          "risks",
+          "summary"
+        ],
+        "type": "object",
+        "properties": {
+          "summary": {
+            "type": "string"
+          },
+          "co2Direction": {
+            "type": "string"
+          },
+          "projectedCo2Mt": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/YearValue"
+            }
+          },
+          "keyDrivers": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "risks": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "confidence": {
+            "type": "string"
+          }
+        }
+      },
+      "ProjectionResponse": {
+        "required": [
+          "alignmentBand",
+          "alignmentScore",
+          "attempts",
+          "baseYear",
+          "baseYearCo2Mt",
+          "cached",
+          "country",
+          "fallbackReason",
+          "generatedAt",
+          "generatedBy",
+          "id",
+          "iso3",
+          "latencyMs",
+          "model",
+          "projection",
+          "promptVersion",
+          "status",
+          "validationErrors"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "iso3": {
+            "type": "string"
+          },
+          "country": {
+            "type": "string"
+          },
+          "generatedBy": {
+            "type": "string"
+          },
+          "model": {
+            "type": "string",
+            "nullable": true
+          },
+          "promptVersion": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "attempts": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "fallbackReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "validationErrors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "generatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "cached": {
+            "type": "boolean"
+          },
+          "latencyMs": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "baseYear": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "baseYearCo2Mt": {
+            "type": "number",
+            "format": "double"
+          },
+          "alignmentScore": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "alignmentBand": {
+            "type": "string",
+            "nullable": true,
+            "enum": [
+              "HIGH",
+              "MEDIUM",
+              "LOW"
+            ]
+          },
+          "projection": {
+            "$ref": "#/components/schemas/ProjectionOutput"
+          }
+        }
+      },
+      "SourceInfo": {
+        "required": [
+          "co2",
+          "renewables",
+          "temp"
+        ],
+        "type": "object",
+        "properties": {
+          "co2": {
+            "type": "string"
+          },
+          "temp": {
+            "type": "string"
+          },
+          "renewables": {
+            "type": "string"
+          }
+        }
+      },
+      "YearValue": {
+        "required": [
+          "co2Mt",
+          "year"
+        ],
+        "type": "object",
+        "properties": {
+          "year": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "co2Mt": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      },
+      "Entry": {
+        "required": [
+          "iso3",
+          "name",
+          "rank",
+          "value"
+        ],
+        "type": "object",
+        "properties": {
+          "rank": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "iso3": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "value": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      },
+      "RankingResponse": {
+        "required": [
+          "countriesWithData",
+          "entries",
+          "metric",
+          "order",
+          "unit",
+          "year"
+        ],
+        "type": "object",
+        "properties": {
+          "metric": {
+            "type": "string"
+          },
+          "unit": {
+            "type": "string"
+          },
+          "year": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "order": {
+            "type": "string"
+          },
+          "countriesWithData": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "entries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Entry"
+            }
+          }
+        }
+      },
+      "Coverage": {
+        "required": [
+          "countries",
+          "defaultYear",
+          "firstYear",
+          "lastYear",
+          "values"
+        ],
+        "type": "object",
+        "properties": {
+          "values": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "countries": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "firstYear": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "lastYear": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "defaultYear": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          }
+        }
+      },
+      "MetricInfo": {
+        "required": [
+          "code",
+          "coverage",
+          "description",
+          "name",
+          "source",
+          "unit"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "unit": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "source": {
+            "$ref": "#/components/schemas/Source"
+          },
+          "coverage": {
+            "$ref": "#/components/schemas/Coverage"
+          }
+        }
+      },
+      "Source": {
+        "required": [
+          "citation",
+          "code",
+          "homepage",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "homepage": {
+            "type": "string"
+          },
+          "citation": {
+            "type": "string"
+          }
+        }
+      },
+      "CountryInfo": {
+        "required": [
+          "iso3",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "iso3": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "CountrySeriesResponse": {
+        "required": [
+          "from",
+          "iso3",
+          "name",
+          "series",
+          "to"
+        ],
+        "type": "object",
+        "properties": {
+          "iso3": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "from": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "to": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "series": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MetricSeries"
+            }
+          }
+        }
+      },
+      "MetricSeries": {
+        "required": [
+          "metric",
+          "points",
+          "unit"
+        ],
+        "type": "object",
+        "properties": {
+          "metric": {
+            "type": "string"
+          },
+          "unit": {
+            "type": "string"
+          },
+          "points": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SeriesPoint"
+            }
+          }
+        }
+      },
+      "SeriesPoint": {
+        "required": [
+          "value",
+          "year"
+        ],
+        "type": "object",
+        "properties": {
+          "year": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "value": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      },
+      "AlignmentResponse": {
+        "required": [
+          "band",
+          "components",
+          "disclaimer",
+          "formulaVersion",
+          "iso3",
+          "name",
+          "reason",
+          "score"
+        ],
+        "type": "object",
+        "properties": {
+          "iso3": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "formulaVersion": {
+            "type": "string"
+          },
+          "score": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "band": {
+            "type": "string",
+            "nullable": true,
+            "enum": [
+              "HIGH",
+              "MEDIUM",
+              "LOW"
+            ]
+          },
+          "components": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Component"
+            }
+          },
+          "reason": {
+            "type": "string",
+            "nullable": true
+          },
+          "disclaimer": {
+            "type": "string"
+          }
+        }
+      },
+      "Component": {
+        "required": [
+          "available",
+          "effectiveWeight",
+          "fromYear",
+          "key",
+          "metric",
+          "note",
+          "points",
+          "subScore",
+          "toYear",
+          "unit",
+          "value",
+          "weight"
+        ],
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "weight": {
+            "type": "number",
+            "format": "double"
+          },
+          "effectiveWeight": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "available": {
+            "type": "boolean"
+          },
+          "metric": {
+            "type": "string"
+          },
+          "value": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "unit": {
+            "type": "string"
+          },
+          "fromYear": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "toYear": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "points": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "subScore": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "note": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "ComparisonResponse": {
+        "required": [
+          "countries",
+          "from",
+          "metric",
+          "to",
+          "unit"
+        ],
+        "type": "object",
+        "properties": {
+          "metric": {
+            "type": "string"
+          },
+          "unit": {
+            "type": "string"
+          },
+          "from": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "to": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "countries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CountrySeries"
+            }
+          }
+        }
+      },
+      "CountrySeries": {
+        "required": [
+          "iso3",
+          "name",
+          "points"
+        ],
+        "type": "object",
+        "properties": {
+          "iso3": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "points": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SeriesPoint"
+            }
+          }
+        }
+      },
+      "Problem": {
+        "required": [
+          "code",
+          "status",
+          "title"
+        ],
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "detail": {
+            "type": "string"
+          },
+          "instance": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string",
+            "example": "COUNTRY_NOT_FOUND"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "description": "RFC 9457 problem details. 'code' is stable and machine-readable."
+      }
+    }
+  }
+}
