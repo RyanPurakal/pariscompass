@@ -1,0 +1,22 @@
+# Local development services. Phase 5 adds the backend and frontend.
+# Start with: docker compose up -d
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: pariscompass
+      POSTGRES_USER: pariscompass
+      POSTGRES_PASSWORD: pariscompass
+    ports:
+      # Host port 5433 avoids clashing with a locally installed Postgres on 5432.
+      - "${POSTGRES_HOST_PORT:-5433}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pariscompass -d pariscompass"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  pgdata:

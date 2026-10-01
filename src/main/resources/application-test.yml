@@ -1,5 +1,6 @@
 # Automated tests. The key is forced empty so a developer's real GEMINI_API_KEY
 # can never make tests call the live API. Gemini is mocked where it is needed.
+# The datasource comes from a Testcontainers Postgres (@ServiceConnection), never a real database.
 app:
   gemini:
     api-key: ""

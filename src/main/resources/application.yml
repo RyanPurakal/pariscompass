@@ -5,6 +5,18 @@ spring:
     name: paris-compass
   profiles:
     default: dev
+  # No defaults here: prod must supply all three. dev supplies local defaults.
+  datasource:
+    url: ${DATABASE_URL}
+    username: ${DATABASE_USERNAME}
+    password: ${DATABASE_PASSWORD}
+  jpa:
+    open-in-view: false
+    hibernate:
+      # Flyway owns the schema. Hibernate only checks that entities match it.
+      ddl-auto: validate
+  flyway:
+    locations: classpath:db/migration
 
 server:
   port: ${PORT:8081}
