@@ -8,7 +8,7 @@ import com.ryanpurakal.pariscompass.model.CountrySeriesResponse;
 import com.ryanpurakal.pariscompass.service.AlignmentService;
 import com.ryanpurakal.pariscompass.service.AnalyticsService;
 import com.ryanpurakal.pariscompass.service.CountryMetricsService;
-import com.ryanpurakal.pariscompass.service.GeminiService;
+import com.ryanpurakal.pariscompass.service.ProjectionService;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Pattern;
@@ -32,7 +32,7 @@ public class CountryController {
     private static final String ISO3_REGEX = "^[A-Za-z]{3}$";
     private static final String ISO3_MESSAGE = "must be a 3-letter ISO 3166-1 alpha-3 code";
 
-    private final GeminiService geminiService;
+    private final ProjectionService projectionService;
     private final CountryMetricsService metricsService;
     private final AnalyticsService analytics;
     private final AlignmentService alignment;
@@ -65,6 +65,10 @@ public class CountryController {
         return alignment.score(iso3.toUpperCase(Locale.ROOT));
     }
 
+    /**
+     * Five-year CO2 projection. POST because it may call a paid external model and creates a stored record.
+     * Falls back to labeled trend extrapolation if the model is unavailable or its output fails validation.
+     */
     @PostMapping("/countries/{iso3}/projection")
     public CountryProjectionResponse getCountryProjection(
             @PathVariable @Pattern(regexp = ISO3_REGEX, message = ISO3_MESSAGE) String iso3) {
@@ -72,7 +76,7 @@ public class CountryController {
         CountryMetrics metrics = metricsService.getLatestMetrics(code);
         return CountryProjectionResponse.builder()
                 .metrics(metrics)
-                .projection(geminiService.generateProjection(code, metrics))
+                .projection(projectionService.project(code))
                 .build();
     }
 }
