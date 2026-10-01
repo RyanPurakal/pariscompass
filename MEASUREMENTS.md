@@ -3,7 +3,7 @@
 Every number here was produced by running the command shown next to it. Nothing is estimated.
 If a number is not in this file, it has not been measured and should not appear on a resume.
 
-Environment for all entries unless noted: macOS (Darwin 27), OpenJDK 21.0.8, Apache Maven 3.9.11, Node 24.8.0.
+Environment for all entries unless noted: Apple M3 Pro, 18 GB RAM, macOS (Darwin 27), OpenJDK 21.0.8, Apache Maven 3.9.11, Node 24.8.0, Docker 29.4.3, PostgreSQL 17 (postgres:17-alpine).
 
 ## Phase 0: Cleanup (2026-10-01)
 
@@ -69,4 +69,72 @@ curl -i -X OPTIONS localhost:18081/api/countries \
 
 All six returned the status shown, and every error response had `Content-Type: application/problem+json`.
 
-Not yet measured (planned): code coverage (Phase 4, JaCoCo), endpoint latency and cache behavior (Phase 6), ETL row counts and runtime (Phase 1 and Phase 6).
+## Phase 1: Real data layer (2026-10-01)
+
+### ETL: rows ingested and rejected (real upstream files)
+
+Source files as downloaded on 2026-10-01 (upstream changes over time; the hash identifies exactly what was ingested):
+
+| Source | Bytes | SHA-256 |
+|---|---|---|
+| OWID CO2 | 14,377,942 | `7f78e2b218ce4bb8c538bbec04fdc9a7982e8d40bff972e650df603899edd5f6` |
+| OWID Energy | 9,229,369 | `266f2e2baad7975351bc9bb4aa061d22b1da9fe4c47d51d2ac6071e01e171f76` |
+| OWID ERA5 temperature | 570,765 | `16911f331e174a18040715d74df1a9d779b7b8db76a57a2b9ffcd7c2aebdf0b5` |
+
+Command (fresh database):
+
+```bash
+docker compose up -d --wait
+./mvnw -DskipTests package
+SPRING_PROFILES_ACTIVE=dev,etl java -jar target/paris-compass-0.0.1-SNAPSHOT.jar
+```
+
+Run 1 results (from the log summary and `etl_source_result`):
+
+| Source | Rows read | Skipped (aggregate) | Skipped (OWID non-ISO) | Rows rejected | Values inserted | Values rejected |
+|---|---|---|---|---|---|---|
+| OWID CO2 | 50,411 | 7,931 | 0 | 0 | 119,474 | 36 (`OUT_OF_RANGE`) |
+| OWID Energy | 23,377 | 6,112 | 0 | 60 (`UNKNOWN_ISO3`) | 17,561 | 0 |
+| OWID ERA5 temperature | 18,318 | 1,548 | 172 | 0 | 16,598 | 0 |
+| **Total** | **92,106** | **15,591** | **172** | **60** | **153,633** | **36** |
+
+What was rejected (`SELECT ... FROM etl_rejection WHERE run_id = 1`):
+- 60 rows: `ANT` (Netherlands Antilles), dissolved in 2010 and no longer in ISO 3166-1.
+- 36 values, all `co2_per_capita_t` above 100 t/person: Sint Maarten 1950 to 1977 (28 values, max 782.7), Curacao (3), Brunei (2), Qatar (2), Kuwait 1991 (364.8). The Kuwait value is real (Gulf War oil fires), so the bound rejects one true extreme.
+
+Resulting database: 233 countries.
+
+| Metric | Values | Countries | Years |
+|---|---|---|---|
+| `co2_per_capita_t` | 22,909 | 213 | 1750 to 2024 |
+| `co2_total_mt` | 23,408 | 215 | 1750 to 2024 |
+| `ghg_total_mt` | 34,825 | 199 | 1850 to 2024 |
+| `low_carbon_share_elec_pct` | 6,551 | 213 | 1985 to 2025 |
+| `population` | 38,332 | 216 | 1750 to 2024 |
+| `renewables_share_elec_pct` | 6,551 | 213 | 1985 to 2025 |
+| `renewables_share_energy_pct` | 4,459 | 79 | 1965 to 2024 |
+| `temperature_anomaly_c` | 16,598 | 193 | 1940 to 2025 |
+
+Query: `SELECT metric_code, count(*), count(DISTINCT iso3), min(year), max(year) FROM observation GROUP BY 1 ORDER BY 1;`
+
+### ETL: runtime and idempotency
+
+Single runs, one after another, on the machine above. Durations include downloading from GitHub and ourworldindata.org over a home connection, so they vary with the network. Treat them as one sample each, not a benchmark (Phase 6 repeats this properly).
+
+| Run | What it tests | Command | Outcome | Run duration (`etl_run`) |
+|---|---|---|---|---|
+| 1 | Fresh load | `SPRING_PROFILES_ACTIVE=dev,etl java -jar target/paris-compass-0.0.1-SNAPSHOT.jar` | 153,633 inserted | 5,216 ms |
+| 2 | Unchanged files | same command again | all 3 sources skipped by SHA-256 | 1,198 ms |
+| 3 | Forced re-ingest | same, with `APP_ETL_FORCE=true` | 0 inserted, 0 updated, 153,633 unchanged | 2,640 ms |
+
+Per-source durations for run 1: CO2 3,695 ms, Energy 800 ms, Temperature 705 ms. Whole process including JVM startup and Flyway migration: 8.14 s wall clock (`/usr/bin/time -p`).
+
+### Backend test suite
+
+```bash
+./mvnw clean test   # Docker must be running (Testcontainers)
+```
+
+Result: 32 tests, 0 failures, 0 errors. Breakdown: `SourceParserTest` 9, `EtlIntegrationTest` 5, `CountryMetricsServiceIntegrationTest` 4, `GlobalExceptionHandlerTest` 6, `AppPropertiesTest` 6, `GeminiServiceTest` 1, `ParisCompassApplicationTests` 1. The 6 mocked `CountryMetricsServiceTest` tests from Phase 0 were removed along with the CSV loader they tested.
+
+Each Phase 1 commit was also checked out in a separate worktree and run with the same command: a37d8db 20 passing, 734e0de 34 passing, 901608d 32 passing.

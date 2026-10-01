@@ -1,0 +1,11 @@
+# One-shot ingestion job. Combine with an environment profile, e.g.
+#   SPRING_PROFILES_ACTIVE=dev,etl ./mvnw spring-boot:run
+# Starts without a web server, runs every source, then exits (0 = success, 1 = any source failed).
+spring:
+  main:
+    web-application-type: none
+
+app:
+  etl:
+    run-on-startup: true
+    exit-after-run: true

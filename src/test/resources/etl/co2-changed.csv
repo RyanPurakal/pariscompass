@@ -1,0 +1,12 @@
+country,year,iso_code,population,co2,co2_per_capita,total_ghg,unused_column
+Africa,2020,,1000,5,1,6,x
+Kosovo,2020,OWID_KOS,1800000,8,4,9,x
+Netherlands Antilles,2000,ANT,200000,5,25,6,x
+United States,2023,USA,336000000,4900.5,14.6,6000.1,x
+United States,2024,USA,340000000,4905.0,14.197,6054.308,x
+United States,2024,USA,340000000,1,1,1,x
+Sint Maarten (Dutch part),1954,SXM,2000,1.5,782.743,,x
+Germany,2024,DEU,83000000,572.3,6.85,abc,x
+Germany,20x4,DEU,1,1,1,1,x
+Germany,2999,DEU,1,1,1,1,x
+Democratic Republic of Congo,1911,COD,,,,-19.725,x

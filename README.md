@@ -12,96 +12,73 @@ A full-stack web application that provides country-specific climate metrics and 
 ## Tech Stack
 
 ### Backend
-- **Spring Boot 3.5.6** - Java 21
-- **Google GenAI** - Gemini AI integration
-- **OpenCSV** - CSV data loading
-- **In-memory data storage** - No database required
+- **Spring Boot 3.5** on Java 21
+- **PostgreSQL 17** with **Flyway** migrations and **Spring Data JPA** (reads) / **JDBC + COPY** (bulk ETL writes)
+- **Google GenAI SDK** for Gemini projections
+- **Testcontainers** for integration tests against a real Postgres
 
 ### Frontend
-- **React 19** - UI framework
-- **Vite** - Build tool
-- **Leaflet** - Interactive maps
-- **React Leaflet** - React bindings for Leaflet
+- **React 19** + **Vite**
+- **Leaflet** / **React Leaflet** for the map
 
 ## Prerequisites
 
-- Java 21 or higher
+- Java 21
 - Node.js 18+ and npm
-- Google Gemini API key ([Get one here](https://makersuite.google.com/app/apikey))
+- Docker (for the local Postgres and for integration tests)
+- Optional: a Google Gemini API key. Without one, everything except projections works.
 
 ## Quick Start
 
 ```bash
-# 1. Set your Gemini API key
-export GEMINI_API_KEY="your_gemini_api_key_here"
+# 1. Start Postgres (host port 5433)
+docker compose up -d
 
-# 2. Run backend (in project root)
-./mvnw spring-boot:run
+# 2. Load the data: downloads OWID CO2, energy and ERA5 temperature data, validates, upserts, exits
+SPRING_PROFILES_ACTIVE=dev,etl ./mvnw spring-boot:run
 
-# 3. Run frontend (in new terminal)
-cd frontend
-npm install
-npm run dev
-
-# 4. Open http://localhost:5173 in your browser
-```
-
-## Setup
-
-### 1. Clone the repository
-
-```bash
-git clone <repository-url>
-cd pariscompass
-```
-
-### 2. Set Environment Variable
-
-**Before running the backend**, set your Gemini API key:
-
-```bash
-export GEMINI_API_KEY="your_gemini_api_key_here"
-```
-
-On Windows (PowerShell):
-```powershell
-$env:GEMINI_API_KEY="your_gemini_api_key_here"
-```
-
-On Windows (CMD):
-```cmd
-set GEMINI_API_KEY=your_gemini_api_key_here
-```
-
-**Note:** You can also use the helper script:
-```bash
+# 3. Run the API on http://localhost:8081 (optionally export GEMINI_API_KEY first)
 ./run-backend.sh
+
+# 4. Run the frontend on http://localhost:5173 (new terminal)
+cd frontend && npm install && npm run dev
 ```
 
-### 3. Run Backend
+Copy `.env.example` to `.env` to set variables; `run-backend.sh` loads it.
 
-```bash
-./mvnw spring-boot:run
-```
+## Data Pipeline (ETL)
 
-Or use the helper script:
-```bash
-./run-backend.sh
-```
+The ETL job is the same Spring Boot artifact started with the `etl` profile: no web server, runs every source, exits `0` on success or `1` if any source failed. It is safe to run repeatedly.
 
-The backend will start on `http://localhost:8081`
+For each source it:
+1. **Downloads** the file and computes its SHA-256 in the same pass. If the hash matches the last successful ingest, the source is skipped (`APP_ETL_FORCE=true` overrides).
+2. **Validates** every row (`etl/SourceParser`):
+   - Regional aggregates (blank ISO code, e.g. "Africa (GCP)") and OWID's own non-ISO entities (`OWID_KOS`, `OWID_WRL`) are **skipped** and counted separately, so they do not inflate the rejection rate.
+   - Rows are **rejected** for an ISO3 code not in ISO 3166-1 (e.g. `ANT`, the dissolved Netherlands Antilles), a non-integer year, a year outside 1750 to the current year, or a repeated (country, year).
+   - Single values are **rejected** if not a finite number or outside the metric's plausibility bounds (see below).
+3. **Upserts** in one transaction per source: `COPY` into a temp staging table, then a single `INSERT ... ON CONFLICT DO UPDATE ... WHERE value IS DISTINCT FROM`, so unchanged values are never rewritten. Inserted, updated and unchanged counts are reported separately.
+4. **Records** the run in `etl_run`, `etl_source_result` and `etl_rejection` (with line number, raw value and reason), and logs a per-source summary.
 
-### 4. Run Frontend
+Run counts and timings from real runs are in [MEASUREMENTS.md](MEASUREMENTS.md).
 
-Open a new terminal window:
+### Metrics
 
-```bash
-cd frontend
-npm install
-npm run dev
-```
+| Code | Source | Unit | Accepted range |
+|------|--------|------|----------------|
+| `co2_total_mt` | OWID CO2 (`co2`) | Mt CO2 | 0 to 50,000 |
+| `co2_per_capita_t` | OWID CO2 (`co2_per_capita`) | t CO2/person | 0 to 100 |
+| `ghg_total_mt` | OWID CO2 (`total_ghg`) | Mt CO2e | -5,000 to 50,000 (negative for net sinks) |
+| `population` | OWID CO2 | people | 0 to 10 billion |
+| `renewables_share_elec_pct` | OWID Energy | % of electricity | 0 to 100 |
+| `low_carbon_share_elec_pct` | OWID Energy | % of electricity | 0 to 100 |
+| `renewables_share_energy_pct` | OWID Energy | % of primary energy | 0 to 100 (79 countries only) |
+| `temperature_anomaly_c` | OWID / Copernicus ERA5 | °C vs 1991-2020 mean | -10 to 10 |
 
-The frontend will start on `http://localhost:5173`
+Bounds are physical plausibility limits chosen before looking at rejections, not fitted to the data. They are deliberately strict: on the real data the 100 t/person bound rejects refinery-dominated microstates (Sint Maarten 1950-1977 reaches 783 t) and also Kuwait 1991 (365 t), which is a real value caused by the Gulf War oil fires. A "flag but keep" status would preserve true extremes; that tradeoff is noted for later.
+
+### Why ERA5 and not Berkeley Earth for temperature
+
+Berkeley Earth's per-country files stopped updating (the US file ends in May 2016; China, Germany and India end in December 2020) and are monthly text files keyed by country name. Copernicus ERA5, as published per country by Our World in Data, covers 193 countries from 1940 to 2025 in one CSV. Its anomalies are relative to the 1991-2020 mean, not pre-industrial levels.
 
 ## API Endpoints
 
@@ -132,18 +109,25 @@ Returns climate metrics for a specific country.
 {
   "iso3": "USA",
   "name": "United States",
-  "year": 2022,
-  "co2PerCapita": 14.2,
-  "co2TotalMt": 4713.0,
-  "temperatureAnomalyC": 1.2,
-  "renewablesSharePct": 21.5,
+  "co2PerCapita": 14.197,
+  "co2TotalMt": 4904.12,
+  "temperatureAnomalyC": 0.83337736,
+  "renewablesSharePct": 25.638,
+  "years": {
+    "co2PerCapita": 2024,
+    "co2TotalMt": 2024,
+    "temperatureAnomalyC": 2025,
+    "renewablesSharePct": 2025
+  },
   "source": {
-    "co2": "Our World in Data",
-    "temp": "Berkeley Earth",
-    "renewables": "OWID"
+    "co2": "Our World in Data: CO2 and Greenhouse Gas Emissions",
+    "temp": "Our World in Data: Annual temperature anomalies (Copernicus ERA5)",
+    "renewables": "Our World in Data: Energy"
   }
 }
 ```
+
+`years` gives the year of each value: sources end in different years, so there is no single snapshot year. `renewablesSharePct` is the renewables share of electricity generation.
 
 ### `POST /api/country/{iso3}/projection`
 Generates AI projection for a country (combines metrics + projection).
@@ -153,20 +137,7 @@ Generates AI projection for a country (combines metrics + projection).
 **Response:**
 ```json
 {
-  "metrics": {
-    "iso3": "USA",
-    "name": "United States",
-    "year": 2022,
-    "co2PerCapita": 14.2,
-    "co2TotalMt": 4713.0,
-    "temperatureAnomalyC": 1.2,
-    "renewablesSharePct": 21.5,
-    "source": {
-      "co2": "Our World in Data",
-      "temp": "Berkeley Earth",
-      "renewables": "OWID"
-    }
-  },
+  "metrics": { "...": "same shape as GET /api/country/{iso3}" },
   "projection": {
     "country": "United States",
     "projection": "Based on current trends, the United States is projected to...",
@@ -181,64 +152,51 @@ Spring Boot Actuator health endpoint.
 
 ## Data Sources
 
-The application uses CSV files located in `src/main/resources/data/`:
-
-- **co2_data.csv**: CO2 emissions data (Our World in Data)
-- **renewables_data.csv**: Renewable energy share data (OWID)
-- **temperature_data.csv**: Temperature anomaly data (Berkeley Earth)
-- **countries.csv**: Country ISO3 codes and names
-
-Data is loaded into memory at application startup for fast access.
+- **CO2 and greenhouse gases, population:** [Our World in Data CO2 dataset](https://github.com/owid/co2-data) (Global Carbon Project, Jones et al., Energy Institute)
+- **Electricity and energy mix:** [Our World in Data energy dataset](https://github.com/owid/energy-data) (Ember, Energy Institute)
+- **Temperature anomalies:** [Our World in Data, Copernicus ERA5](https://ourworldindata.org/grapher/annual-temperature-anomalies). Contains modified Copernicus Climate Change Service information.
 
 ## Project Structure
 
 ```
-paris-compass/
-├── src/                              # Spring Boot backend (Java 21)
-│   ├── main/
-│   │   ├── java/com/ryanpurakal/pariscompass/
-│   │   │   ├── ParisCompassApplication.java # Entry point: boots Spring context
-│   │   │   ├── config/               # Bean wiring: Gemini client, CORS rules
-│   │   │   ├── controller/           # HTTP layer: maps URLs to services
-│   │   │   ├── model/                # DTOs shared between controller & service
-│   │   │   └── service/              # Core logic: data loading, metrics, AI calls
-│   │   └── resources/
-│   │       ├── data/                 # CSV datasets loaded at startup
-│   │       └── application.properties
-│   └── test/                         # Unit tests (JUnit 5 + Mockito)
-├── frontend/                         # React 19 + Vite SPA
-│   ├── src/
-│   │   ├── App.jsx                   # Full UI: map, country list, data panel
-│   │   ├── countryCoordinates.js     # ISO3 → [lat, lng] lookup table
-│   │   ├── main.jsx                  # React entry point
-│   │   └── App.css / index.css       # Global styles and component styles
-│   └── package.json
-└── pom.xml                           # Maven build configuration
+pariscompass/
+├── src/main/java/com/ryanpurakal/pariscompass/
+│   ├── config/        # AppProperties (typed env config), Gemini client, CORS
+│   ├── controller/    # HTTP layer
+│   ├── domain/        # Read-only JPA entities (Country, Observation)
+│   ├── etl/           # Ingestion job: fetch, validate, upsert, record
+│   ├── exception/     # Typed exceptions + RFC 9457 GlobalExceptionHandler
+│   ├── model/         # Response DTOs
+│   ├── repository/    # Spring Data JPA repositories
+│   └── service/       # Metrics and Gemini services
+├── src/main/resources/
+│   ├── db/migration/  # Flyway migrations (schema owner)
+│   └── application*.yml
+├── src/test/          # Unit tests + Testcontainers integration tests, ETL fixture CSVs
+├── frontend/          # React 19 + Vite SPA
+├── docker-compose.yml # Local Postgres
+└── MEASUREMENTS.md    # Every reported number and the command that produced it
 ```
 
 ## Architecture & Data Flow
 
 ```
-User clicks country
-        │
+ OWID CO2 / Energy / ERA5 CSVs
+        │  (etl profile: download, validate, COPY + upsert)
         ▼
-  React (App.jsx)
-  POST /api/country/{iso3}/projection
-        │
-        ▼
-  CountryController          ← HTTP boundary: validates iso3, composes response
-        │
-        ├──► CountryMetricsService   ← looks up latest CSV data for the country
-        │         │
-        │         └──► DataLoader    ← in-memory maps loaded from CSV at startup
-        │
-        └──► GeminiService           ← calls Gemini API; caches result 1 hr per country
-                  │
-                  └──► Google Gemini API (external)
+   PostgreSQL ── country, metric, observation(iso3, metric_code, year, value)
+        ▲
+        │  JPA reads
+  CountryMetricsService ◄── CountryController ◄── React (App.jsx)
+                                   │
+                                   └──► GeminiService ──► Google Gemini API
 ```
 
 **Key design choices:**
-- All CSV data is loaded into memory at startup: no database, no per-request I/O.
+- **One row per (country, metric, year)** rather than a column per metric: new metrics need no migration and every metric is queried the same way. The primary key `(iso3, metric_code, year)` serves time-series reads; a covering index on `(metric_code, year)` serves "all countries in a year" reads.
+- **Flyway owns the schema**; Hibernate runs with `ddl-auto=validate` and only checks that entities match it.
+- **JDBC for bulk writes, JPA for reads**: about 150k values per load is set-based work where per-entity persistence adds overhead for no benefit.
+- **The ETL is a profile of the API artifact**, not a separate service: one build, shared schema and config.
 - Gemini projections are cached per country for 1 hour to avoid redundant API calls.
 - CORS origins come from `CORS_ALLOWED_ORIGINS` (dev default `http://localhost:5173`).
 
@@ -252,6 +210,8 @@ Settings live in `src/main/resources/application.yml` with per-profile overrides
 | `GEMINI_API_KEY` | none | Optional in dev (projections return 503), required in prod |
 | `GEMINI_MODEL` | `gemini-2.5-flash` | |
 | `CORS_ALLOWED_ORIGINS` | `http://localhost:5173` in dev | Comma-separated; required in prod, `*` rejected |
+| `DATABASE_URL` / `DATABASE_USERNAME` / `DATABASE_PASSWORD` | local compose DB in dev | Required in prod |
+| `APP_ETL_FORCE` | `false` | Re-ingest sources even if their file hash is unchanged |
 | `PORT` | `8081` | |
 | `VITE_API_BASE_URL` (frontend) | `http://localhost:8081/api` | Baked into the JS bundle at build time |
 
@@ -259,28 +219,15 @@ Prod refuses to start if a required variable is missing, and reports all of them
 
 ## Testing
 
-Run backend tests:
-
 ```bash
-./mvnw test
-```
-
-Run frontend tests (if configured):
-
-```bash
-cd frontend
-npm test
+./mvnw clean test   # needs Docker running: integration tests start a Postgres container
 ```
 
 ## Development Notes
 
-### Adding New Countries
+### Adding a metric
 
-1. Add country to `src/main/resources/data/countries.csv`
-2. Add corresponding data rows to:
-   - `co2_data.csv`
-   - `renewables_data.csv`
-   - `temperature_data.csv`
+Add an entry to `etl/MetricDefinition` (source, source column, unit, bounds) and re-run the ETL with `APP_ETL_FORCE=true`. The `metric` table is synced from the enum on every run; no migration is needed.
 
 ### CORS Configuration
 
@@ -317,6 +264,7 @@ Missing data fields return `null` in JSON responses.
 ### Backend won't start
 - Ensure Java 21 is installed: `java -version`
 - Check if port 8081 is available
+- Ensure Postgres is running: `docker compose ps`
 - In prod, `GEMINI_API_KEY` and `CORS_ALLOWED_ORIGINS` must be set (dev runs without them)
 
 ### Frontend can't connect to backend
@@ -325,9 +273,11 @@ Missing data fields return `null` in JSON responses.
 - Verify `VITE_API_BASE_URL` points at the backend (default `http://localhost:8081/api`)
 
 ### No data showing
-- Check CSV files exist in `src/main/resources/data/`
-- Verify CSV format matches expected structure
-- Check application logs for data loading errors
+- Run the ETL: `SPRING_PROFILES_ACTIVE=dev,etl ./mvnw spring-boot:run`
+- Check the last run: `SELECT * FROM etl_source_result ORDER BY run_id DESC LIMIT 3;`
+
+### Port 5432 or 5433 already in use
+- The compose Postgres listens on host port 5433. Set `POSTGRES_HOST_PORT` and `DATABASE_URL` to use another.
 
 ### Gemini API errors
 - Verify `GEMINI_API_KEY` is set correctly
@@ -344,7 +294,7 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## Acknowledgments
 
-- Climate data sources: Our World in Data, Berkeley Earth
+- Climate data: Our World in Data, Global Carbon Project, Ember, Energy Institute, Copernicus Climate Change Service (ERA5)
 - Mapping: Leaflet and OpenStreetMap
 - AI: Google Gemini
 

@@ -17,7 +17,7 @@ class GeminiServiceTest {
     void withoutApiKeyProjectionIsUnavailable() {
         AppProperties props = new AppProperties(
                 new AppProperties.Cors(List.of("http://localhost:5173")),
-                new AppProperties.Gemini("gemini-2.5-flash", "", false));
+                new AppProperties.Gemini("gemini-2.5-flash", "", false), null);
         GeminiService service = new GeminiService(new StaticListableBeanFactory().getBeanProvider(Client.class), props);
 
         CountryMetrics metrics = CountryMetrics.builder().iso3("USA").name("United States").build();

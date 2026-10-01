@@ -1,27 +1,16 @@
 # service: Business Logic
 
-Three Spring-managed components. Each has a single, narrow job.
+Two services. Each has a single, narrow job. Data is written by the `etl` package and read here.
 
 ## Files
 
-### `DataLoader.java`
-Loads all CSV files from `src/main/resources/data/` into memory at startup (`@PostConstruct`).
-
-Produces four in-memory maps:
-- `co2Data`: `iso3 → year → Co2Data`
-- `renewablesData`: `iso3 → year → RenewablesData`
-- `temperatureData`: `iso3 → year → TemperatureData`
-- `countryNames`: `iso3 → display name`
-
-Nothing reads the CSV files after startup. All other services query these maps directly.
-
 ### `CountryMetricsService.java`
-Aggregates the four raw maps from `DataLoader` into a single `CountryMetrics` object for a given ISO3 code.
+Builds a `CountryMetrics` snapshot for one ISO3 code from the `observation` table.
 
 Key behaviour:
-- Finds the **latest available year** across all three datasets for a given country.
+- Takes the **latest year of each metric independently** (Postgres `DISTINCT ON`), and reports each value's year in `years`.
 - Throws `CountryNotFoundException` if the ISO3 is unknown (rendered as 404 by `GlobalExceptionHandler`).
-- Also provides `getAllCountries()` (sorted by name).
+- `getAllCountries()` returns every ingested country, sorted by name.
 
 ### `GeminiService.java`
 Sends a structured prompt to the Gemini API and returns a `ProjectionResponse`.
@@ -40,7 +29,7 @@ HTTP request
 CountryController
      │
      ├─ CountryMetricsService.getLatestMetrics(iso3)
-     │       └─ DataLoader.getCo2Data() / getRenewablesData() / getTemperatureData()
+     │       └─ CountryRepository / ObservationRepository (Postgres)
      │
      └─ GeminiService.generateProjection(iso3, metrics)
              └─ Gemini API (external, via Client bean from config/)

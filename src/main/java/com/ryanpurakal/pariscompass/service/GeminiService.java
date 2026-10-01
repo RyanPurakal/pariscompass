@@ -83,18 +83,18 @@ public class GeminiService {
         prompt.append("Based on the provided metrics for ").append(metrics.getName()).append(" (").append(metrics.getIso3()).append("), ");
         prompt.append("predict how the country's climate and emissions profile will look in 5 years.\n\n");
         
-        prompt.append("Current metrics (year ").append(metrics.getYear()).append("):\n");
+        prompt.append("Latest available metrics:\n");
         if (metrics.getCo2PerCapita() != null) {
-            prompt.append("- CO2 per capita: ").append(metrics.getCo2PerCapita()).append(" tons\n");
+            prompt.append("- CO2 per capita: ").append(metrics.getCo2PerCapita()).append(" tons").append(yearOf(metrics, "co2PerCapita")).append("\n");
         }
         if (metrics.getCo2TotalMt() != null) {
-            prompt.append("- Total CO2 emissions: ").append(metrics.getCo2TotalMt()).append(" million tons\n");
+            prompt.append("- Total CO2 emissions: ").append(metrics.getCo2TotalMt()).append(" million tons").append(yearOf(metrics, "co2TotalMt")).append("\n");
         }
         if (metrics.getTemperatureAnomalyC() != null) {
-            prompt.append("- Temperature anomaly: ").append(metrics.getTemperatureAnomalyC()).append("°C\n");
+            prompt.append("- Temperature anomaly: ").append(metrics.getTemperatureAnomalyC()).append("°C vs 1991-2020 mean").append(yearOf(metrics, "temperatureAnomalyC")).append("\n");
         }
         if (metrics.getRenewablesSharePct() != null) {
-            prompt.append("- Renewable energy share: ").append(metrics.getRenewablesSharePct()).append("%\n");
+            prompt.append("- Renewables share of electricity: ").append(metrics.getRenewablesSharePct()).append("%").append(yearOf(metrics, "renewablesSharePct")).append("\n");
         }
         
         prompt.append("\nRequirements:\n");
@@ -106,6 +106,11 @@ public class GeminiService {
         prompt.append("6. Be specific about the projected trajectory based on current trends.\n");
         
         return prompt.toString();
+    }
+
+    private static String yearOf(CountryMetrics metrics, String field) {
+        Integer year = metrics.getYears() == null ? null : metrics.getYears().get(field);
+        return year == null ? "" : " (" + year + ")";
     }
 
     private boolean isExpired(CacheEntry entry) {

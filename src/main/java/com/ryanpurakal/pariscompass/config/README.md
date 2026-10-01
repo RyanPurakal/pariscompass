@@ -25,3 +25,7 @@ Registers a `CorsFilter` for `/api/**` using `app.cors.allowed-origins` (`CORS_A
 | `dev` | default | optional (503 without it) | defaults to `http://localhost:5173` |
 | `test` | `@ActiveProfiles("test")` | forced empty, so tests never call the live API | `http://localhost:5173` |
 | `prod` | `SPRING_PROFILES_ACTIVE=prod` | required, startup fails without it | required, startup fails without it |
+
+Database: `dev` defaults to the docker-compose Postgres on `localhost:5433`; `test` uses a Testcontainers Postgres; `prod` requires `DATABASE_URL`, `DATABASE_USERNAME` and `DATABASE_PASSWORD`.
+
+`etl` is an add-on profile (e.g. `dev,etl`): no web server, run the ingestion job once, exit 0 or 1.
