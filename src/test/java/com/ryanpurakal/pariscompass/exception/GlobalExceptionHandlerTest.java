@@ -2,6 +2,7 @@ package com.ryanpurakal.pariscompass.exception;
 
 import com.ryanpurakal.pariscompass.controller.CountryController;
 import com.ryanpurakal.pariscompass.model.CountryMetrics;
+import com.ryanpurakal.pariscompass.service.AnalyticsService;
 import com.ryanpurakal.pariscompass.service.CountryMetricsService;
 import com.ryanpurakal.pariscompass.service.GeminiService;
 import org.junit.jupiter.api.Test;
@@ -35,6 +36,9 @@ class GlobalExceptionHandlerTest {
 
     @MockitoBean
     private GeminiService geminiService;
+
+    @MockitoBean
+    private AnalyticsService analyticsService;
 
     @Test
     void unknownCountryReturns404Problem() throws Exception {

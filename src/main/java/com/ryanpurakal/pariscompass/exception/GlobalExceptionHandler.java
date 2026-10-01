@@ -34,6 +34,11 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return problem(HttpStatus.NOT_FOUND, "COUNTRY_NOT_FOUND", ex.getMessage());
     }
 
+    @ExceptionHandler(InvalidRequestException.class)
+    public ProblemDetail handleInvalidRequest(InvalidRequestException ex) {
+        return problem(HttpStatus.BAD_REQUEST, ex.getCode(), ex.getMessage());
+    }
+
     @ExceptionHandler(ProjectionUnavailableException.class)
     public ProblemDetail handleProjectionUnavailable(ProjectionUnavailableException ex) {
         log.warn("Projection unavailable: {}", ex.getMessage(), ex.getCause());

@@ -3,8 +3,12 @@ package com.ryanpurakal.pariscompass.controller;
 import com.ryanpurakal.pariscompass.model.CountryInfo;
 import com.ryanpurakal.pariscompass.model.CountryMetrics;
 import com.ryanpurakal.pariscompass.model.CountryProjectionResponse;
+import com.ryanpurakal.pariscompass.model.CountrySeriesResponse;
+import com.ryanpurakal.pariscompass.service.AnalyticsService;
 import com.ryanpurakal.pariscompass.service.CountryMetricsService;
 import com.ryanpurakal.pariscompass.service.GeminiService;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Pattern;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -28,6 +32,7 @@ public class CountryController {
 
     private final GeminiService geminiService;
     private final CountryMetricsService metricsService;
+    private final AnalyticsService analytics;
 
     @GetMapping("/countries")
     public List<CountryInfo> getAllCountries() {
@@ -38,6 +43,16 @@ public class CountryController {
     public CountryMetrics getCountryMetrics(
             @PathVariable @Pattern(regexp = ISO3_REGEX, message = ISO3_MESSAGE) String iso3) {
         return metricsService.getLatestMetrics(iso3.toUpperCase(Locale.ROOT));
+    }
+
+    /** Time series for one country. {@code metrics} defaults to every metric; years default to all available. */
+    @GetMapping("/countries/{iso3}/series")
+    public CountrySeriesResponse getCountrySeries(
+            @PathVariable @Pattern(regexp = ISO3_REGEX, message = ISO3_MESSAGE) String iso3,
+            @RequestParam(required = false) List<String> metrics,
+            @RequestParam(required = false) @Min(1750) @Max(2100) Integer from,
+            @RequestParam(required = false) @Min(1750) @Max(2100) Integer to) {
+        return analytics.countrySeries(iso3.toUpperCase(Locale.ROOT), metrics, from, to);
     }
 
     @PostMapping("/countries/{iso3}/projection")

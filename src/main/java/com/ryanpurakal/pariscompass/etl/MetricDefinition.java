@@ -2,6 +2,7 @@ package com.ryanpurakal.pariscompass.etl;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Every metric the app stores: where it comes from, its unit, and the range a value must fall
@@ -53,6 +54,10 @@ public enum MetricDefinition {
         this.min = min;
         this.max = max;
         this.description = description;
+    }
+
+    public static Optional<MetricDefinition> byCode(String code) {
+        return Arrays.stream(values()).filter(m -> m.code.equals(code)).findFirst();
     }
 
     public static List<MetricDefinition> forSource(DataSource source) {
