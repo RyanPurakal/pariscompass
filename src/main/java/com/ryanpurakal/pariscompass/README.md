@@ -17,7 +17,7 @@ Spring Boot 3.5 application serving climate metrics and AI projections.
 
 ## Request lifecycle
 
-1. HTTP request arrives → `GeminiController`
+1. HTTP request arrives → `CountryController`
 2. Controller delegates to `CountryMetricsService` (data) and/or `GeminiService` (AI)
 3. Services use `DataLoader` (in-memory maps) and the Gemini `Client` bean (external)
 4. Controller assembles a response DTO and returns it

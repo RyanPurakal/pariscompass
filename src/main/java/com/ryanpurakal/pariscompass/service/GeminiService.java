@@ -30,21 +30,6 @@ public class GeminiService {
     private final Map<String, CacheEntry> cache = new ConcurrentHashMap<>();
     private static final long CACHE_TTL_HOURS = 1;
 
-    // Original method - kept for backward compatibility
-    public String askGemini(String prompt) {
-        try {
-            GenerateContentResponse response = client.models.generateContent(
-                    config.getModelName(),
-                    "Based on the following data, predict how " + prompt + " climate and emissions profile will look in 5 years. Provide a concise summary with projected CO2 trends, energy transition progress, and risk to Paris Agreement goals.",
-                    null);
-            return response.text();
-        } catch (Exception e) {
-            log.error("Error calling Gemini API", e);
-            throw new RuntimeException("Failed to generate response: " + e.getMessage(), e);
-        }
-    }
-
-    // New method for country projections
     public ProjectionResponse generateProjection(String iso3, CountryMetrics metrics) {
         // Check cache
         CacheEntry cached = cache.get(iso3);

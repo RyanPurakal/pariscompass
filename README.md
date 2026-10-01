@@ -176,17 +176,6 @@ Generates AI projection for a country (combines metrics + projection).
 }
 ```
 
-### `GET /api/health`
-Health check endpoint.
-
-**Response:**
-```json
-{
-  "status": "UP",
-  "service": "Paris Compass"
-}
-```
-
 ### `GET /actuator/health`
 Spring Boot Actuator health endpoint.
 
@@ -237,7 +226,7 @@ User clicks country
   POST /api/country/{iso3}/projection
         │
         ▼
-  GeminiController          ← HTTP boundary: validates iso3, composes response
+  CountryController          ← HTTP boundary: validates iso3, composes response
         │
         ├──► CountryMetricsService   ← looks up latest CSV data for the country
         │         │

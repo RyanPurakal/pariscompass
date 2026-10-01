@@ -1,6 +1,6 @@
 # controller — HTTP Layer
 
-One controller, `GeminiController`, handles every public-facing API route under `/api`.
+One controller, `CountryController`, handles every public-facing API route under `/api`.
 
 ## Responsibility
 
@@ -16,11 +16,8 @@ Translate HTTP requests into service calls and HTTP responses. No business logic
 | `GET`  | `/api/countries` | List all countries (ISO3 + name) |
 | `GET`  | `/api/country/{iso3}` | Current climate metrics for one country |
 | `POST` | `/api/country/{iso3}/projection` | Metrics + Gemini 5-year projection (main endpoint) |
-| `POST` | `/api/projection` | Projection by country name (body: `{country: "..."}`) |
-| `POST` | `/api/gemini/ask` | Raw Gemini prompt pass-through (legacy) |
-| `GET`  | `/api/health` | Liveness check |
 
 ## What passes through here
 
-Inbound: `String iso3` (path variable) or `ProjectionRequest` (request body)  
+Inbound: `String iso3` (path variable)  
 Outbound: `CountryMetrics`, `ProjectionResponse`, or `CountryProjectionResponse` — all from the `model/` package

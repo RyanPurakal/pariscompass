@@ -135,14 +135,5 @@ public class CountryMetricsService {
                 .sorted((a, b) -> a.getName().compareToIgnoreCase(b.getName()))
                 .collect(Collectors.toList());
     }
-
-    public String findIso3ByName(String countryName) {
-        return getAllCountries().stream()
-                .filter(c -> c.getName().equalsIgnoreCase(countryName) || 
-                            c.getName().toLowerCase().contains(countryName.toLowerCase()))
-                .map(CountryInfo::getIso3)
-                .findFirst()
-                .orElse(null);
-    }
 }
 

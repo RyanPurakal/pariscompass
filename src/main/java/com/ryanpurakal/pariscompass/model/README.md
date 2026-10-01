@@ -8,7 +8,6 @@ Plain data containers. No logic, no Spring annotations beyond Lombok.
 |-------|-----------|-------------|
 | `CountryInfo.java` | outbound | Lightweight country stub: `iso3` + `name`. Used for the country list endpoint. |
 | `CountryMetrics.java` | outbound | Full climate snapshot for one country: CO₂, renewables, temperature, data sources. Contains nested `SourceInfo`. |
-| `ProjectionRequest.java` | inbound | Request body for the name-based projection endpoint: `{ country: "..." }`. |
 | `ProjectionResponse.java` | outbound | Gemini AI result: projection text, model name, generation timestamp. |
 | `CountryProjectionResponse.java` | outbound | Composite response: `CountryMetrics` + `ProjectionResponse`. This is what the frontend's main call receives. |
 
