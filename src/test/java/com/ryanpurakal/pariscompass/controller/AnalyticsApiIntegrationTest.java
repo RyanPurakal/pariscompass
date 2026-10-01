@@ -153,4 +153,20 @@ class AnalyticsApiIntegrationTest {
                 .andExpect(jsonPath("$.countriesWithData").value(0))
                 .andExpect(jsonPath("$.entries", hasSize(0)));
     }
+
+    @Test
+    void alignmentExplainsWhyThereIsNoScoreWhenHistoryIsShort() throws Exception {
+        // Fixture USA has only 2023 and 2024 CO2 values, below the 6-point minimum.
+        mvc.perform(get("/api/countries/USA/alignment"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.formulaVersion").value("v1"))
+                .andExpect(jsonPath("$.score").doesNotExist())
+                .andExpect(jsonPath("$.reason").value(org.hamcrest.Matchers.containsString("have 2")))
+                .andExpect(jsonPath("$.components", hasSize(4)))
+                .andExpect(jsonPath("$.components[1].key").value("emissions_level"))
+                .andExpect(jsonPath("$.components[1].value").value(14.197))
+                .andExpect(jsonPath("$.disclaimer").value(org.hamcrest.Matchers.containsString("not an official")));
+        mvc.perform(get("/api/countries/ATA/alignment"))
+                .andExpect(status().isNotFound());
+    }
 }

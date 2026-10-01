@@ -2,6 +2,7 @@ package com.ryanpurakal.pariscompass.exception;
 
 import com.ryanpurakal.pariscompass.controller.CountryController;
 import com.ryanpurakal.pariscompass.model.CountryMetrics;
+import com.ryanpurakal.pariscompass.service.AlignmentService;
 import com.ryanpurakal.pariscompass.service.AnalyticsService;
 import com.ryanpurakal.pariscompass.service.CountryMetricsService;
 import com.ryanpurakal.pariscompass.service.GeminiService;
@@ -39,6 +40,9 @@ class GlobalExceptionHandlerTest {
 
     @MockitoBean
     private AnalyticsService analyticsService;
+
+    @MockitoBean
+    private AlignmentService alignmentService;
 
     @Test
     void unknownCountryReturns404Problem() throws Exception {

@@ -1,9 +1,11 @@
 package com.ryanpurakal.pariscompass.controller;
 
+import com.ryanpurakal.pariscompass.model.AlignmentResponse;
 import com.ryanpurakal.pariscompass.model.CountryInfo;
 import com.ryanpurakal.pariscompass.model.CountryMetrics;
 import com.ryanpurakal.pariscompass.model.CountryProjectionResponse;
 import com.ryanpurakal.pariscompass.model.CountrySeriesResponse;
+import com.ryanpurakal.pariscompass.service.AlignmentService;
 import com.ryanpurakal.pariscompass.service.AnalyticsService;
 import com.ryanpurakal.pariscompass.service.CountryMetricsService;
 import com.ryanpurakal.pariscompass.service.GeminiService;
@@ -33,6 +35,7 @@ public class CountryController {
     private final GeminiService geminiService;
     private final CountryMetricsService metricsService;
     private final AnalyticsService analytics;
+    private final AlignmentService alignment;
 
     @GetMapping("/countries")
     public List<CountryInfo> getAllCountries() {
@@ -53,6 +56,13 @@ public class CountryController {
             @RequestParam(required = false) @Min(1750) @Max(2100) Integer from,
             @RequestParam(required = false) @Min(1750) @Max(2100) Integer to) {
         return analytics.countrySeries(iso3.toUpperCase(Locale.ROOT), metrics, from, to);
+    }
+
+    /** Deterministic Paris alignment score (formula in SCORING.md). Computed in Java, never by the LLM. */
+    @GetMapping("/countries/{iso3}/alignment")
+    public AlignmentResponse getAlignment(
+            @PathVariable @Pattern(regexp = ISO3_REGEX, message = ISO3_MESSAGE) String iso3) {
+        return alignment.score(iso3.toUpperCase(Locale.ROOT));
     }
 
     @PostMapping("/countries/{iso3}/projection")
