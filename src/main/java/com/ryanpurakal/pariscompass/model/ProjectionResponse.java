@@ -1,5 +1,6 @@
 package com.ryanpurakal.pariscompass.model;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import com.ryanpurakal.pariscompass.projection.ProjectionOutput;
 import com.ryanpurakal.pariscompass.scoring.AlignmentScorer;
 
@@ -19,19 +20,19 @@ public record ProjectionResponse(
         String iso3,
         String country,
         String generatedBy,
-        String model,
+        @Schema(nullable = true) String model,
         String promptVersion,
         String status,
         int attempts,
-        String fallbackReason,
+        @Schema(nullable = true) String fallbackReason,
         List<String> validationErrors,
         Instant generatedAt,
         boolean cached,
         long latencyMs,
         int baseYear,
         double baseYearCo2Mt,
-        Double alignmentScore,
-        AlignmentScorer.Band alignmentBand,
+        @Schema(nullable = true) Double alignmentScore,
+        @Schema(nullable = true) AlignmentScorer.Band alignmentBand,
         ProjectionOutput projection) {
 
     public ProjectionResponse asCached() {

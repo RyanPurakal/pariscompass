@@ -42,6 +42,18 @@ class OpenApiDocsIntegrationTest {
     }
 
     @Test
+    void schemasMarkEveryFieldRequiredAndOnlyRealNullsNullable() throws Exception {
+        mvc.perform(get("/v3/api-docs"))
+                .andExpect(jsonPath("$.openapi").value(org.hamcrest.Matchers.startsWith("3.0")))
+                .andExpect(jsonPath("$.components.schemas.AlignmentResponse.required",
+                        org.hamcrest.Matchers.hasItems("score", "band", "components", "disclaimer")))
+                .andExpect(jsonPath("$.components.schemas.AlignmentResponse.properties.score.nullable").value(true))
+                .andExpect(jsonPath("$.components.schemas.AlignmentResponse.properties.iso3.nullable").doesNotExist())
+                .andExpect(jsonPath("$.components.schemas.ProjectionResponse.properties.model.nullable").value(true))
+                .andExpect(jsonPath("$.components.schemas.CountryMetrics.properties.co2PerCapita.nullable").value(true));
+    }
+
+    @Test
     void swaggerUiIsServed() throws Exception {
         mvc.perform(get("/swagger-ui/index.html")).andExpect(status().isOk());
     }

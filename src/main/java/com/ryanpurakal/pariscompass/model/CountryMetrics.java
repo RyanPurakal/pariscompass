@@ -1,5 +1,6 @@
 package com.ryanpurakal.pariscompass.model;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -19,10 +20,10 @@ import java.util.Map;
 public class CountryMetrics {
     private String iso3;
     private String name;
-    private Double co2PerCapita;
-    private Double co2TotalMt;
-    private Double temperatureAnomalyC;
-    private Double renewablesSharePct;
+    private @Schema(nullable = true) Double co2PerCapita;
+    private @Schema(nullable = true) Double co2TotalMt;
+    private @Schema(nullable = true) Double temperatureAnomalyC;
+    private @Schema(nullable = true) Double renewablesSharePct;
     private Map<String, Integer> years;
     private SourceInfo source;
 
