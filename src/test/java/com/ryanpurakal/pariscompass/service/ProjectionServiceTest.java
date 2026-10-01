@@ -72,7 +72,7 @@ class ProjectionServiceTest {
         return new ProjectionService(countries, analytics, alignment, schema, new ProjectionValidator(MAPPER, schema),
                 factory.getBeanProvider(ProjectionModel.class), CLOCK, records,
                 new AppProperties(new AppProperties.Cors(List.of("http://localhost:5173")),
-                        new AppProperties.Gemini("m", "", false), null, null));
+                        new AppProperties.Gemini("m", "", false), null, null, null));
     }
 
     private static String validReply(String direction, double... values) {

@@ -6,6 +6,7 @@ import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.util.StringUtils;
 import org.springframework.validation.annotation.Validated;
@@ -24,7 +25,7 @@ import java.util.Map;
 @Validated
 @ConfigurationProperties(prefix = "app")
 public record AppProperties(@Valid @NotNull Cors cors, @Valid @NotNull Gemini gemini, @Valid Etl etl,
-                            @Valid Projection projection) {
+                            @Valid Projection projection, @Valid RateLimit rateLimit) {
 
     public AppProperties {
         if (etl == null) {
@@ -32,6 +33,9 @@ public record AppProperties(@Valid @NotNull Cors cors, @Valid @NotNull Gemini ge
         }
         if (projection == null) {
             projection = new Projection(null);
+        }
+        if (rateLimit == null) {
+            rateLimit = new RateLimit(5, 100);
         }
     }
 
@@ -88,5 +92,13 @@ public record AppProperties(@Valid @NotNull Cors cors, @Valid @NotNull Gemini ge
                 cacheTtl = Duration.ofDays(30);
             }
         }
+    }
+
+    /**
+     * Limits on POST /api/countries/{iso3}/projection, the only endpoint that can call a paid model.
+     * The per-client limit is keyed by client IP and is best effort; the global hourly cap is what
+     * bounds model spend no matter how many IPs a caller uses.
+     */
+    public record RateLimit(@Positive int projectionsPerClientPerMinute, @Positive int projectionsPerHourGlobal) {
     }
 }

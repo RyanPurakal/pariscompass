@@ -87,6 +87,16 @@
             <version>1.74.0</version>
         </dependency>
         <dependency>
+            <groupId>com.bucket4j</groupId>
+            <artifactId>bucket4j_jdk17-core</artifactId>
+            <version>8.20.0</version>
+        </dependency>
+        <dependency>
+            <!-- Bounded, expiring map of per-client buckets; version managed by Spring Boot. -->
+            <groupId>com.github.ben-manes.caffeine</groupId>
+            <artifactId>caffeine</artifactId>
+        </dependency>
+        <dependency>
             <!-- 2.x line: built on Jackson 2, matching Spring Boot 3. 3.x requires Jackson 3. -->
             <groupId>com.networknt</groupId>
             <artifactId>json-schema-validator</artifactId>

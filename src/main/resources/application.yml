@@ -30,6 +30,9 @@ app:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}
   projection:
     cache-ttl: ${PROJECTION_CACHE_TTL:30d}
+  rate-limit:
+    projections-per-client-per-minute: ${RATE_LIMIT_PER_CLIENT_PER_MINUTE:5}
+    projections-per-hour-global: ${RATE_LIMIT_GLOBAL_PER_HOUR:100}
   etl:
     run-on-startup: false
     exit-after-run: false

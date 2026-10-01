@@ -6,3 +6,7 @@ app:
     api-key: ""
   cors:
     allowed-origins: http://localhost:5173
+  # High enough that ordinary tests never hit it; RateLimitIntegrationTest overrides these.
+  rate-limit:
+    projections-per-client-per-minute: 10000
+    projections-per-hour-global: 10000

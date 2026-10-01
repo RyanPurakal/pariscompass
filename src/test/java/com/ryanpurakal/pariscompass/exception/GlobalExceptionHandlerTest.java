@@ -5,6 +5,7 @@ import com.ryanpurakal.pariscompass.model.CountryMetrics;
 import com.ryanpurakal.pariscompass.service.AlignmentService;
 import com.ryanpurakal.pariscompass.service.AnalyticsService;
 import com.ryanpurakal.pariscompass.service.CountryMetricsService;
+import com.ryanpurakal.pariscompass.ratelimit.ProjectionRateLimiter;
 import com.ryanpurakal.pariscompass.service.ProjectionService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,6 +36,9 @@ class GlobalExceptionHandlerTest {
 
     @MockitoBean
     private ProjectionService projectionService;
+
+    @MockitoBean
+    private ProjectionRateLimiter rateLimiter;
 
     @MockitoBean
     private AnalyticsService analyticsService;

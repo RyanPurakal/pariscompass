@@ -45,7 +45,7 @@ class EtlIntegrationTest {
 
     private EtlRunSummary run(Map<DataSource, String> sources, boolean force) {
         AppProperties props = new AppProperties(properties.cors(), properties.gemini(),
-                new AppProperties.Etl(false, false, force, sources), properties.projection());
+                new AppProperties.Etl(false, false, force, sources), properties.projection(), properties.rateLimit());
         return new EtlService(repository, fetcher, props, CLOCK_2025).runAll();
     }
 
