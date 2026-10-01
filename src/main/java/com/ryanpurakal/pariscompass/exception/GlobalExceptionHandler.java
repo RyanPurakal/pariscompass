@@ -34,10 +34,21 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return problem(HttpStatus.NOT_FOUND, "COUNTRY_NOT_FOUND", ex.getMessage());
     }
 
-    @ExceptionHandler(ProjectionUnavailableException.class)
-    public ProblemDetail handleProjectionUnavailable(ProjectionUnavailableException ex) {
-        log.warn("Projection unavailable: {}", ex.getMessage(), ex.getCause());
-        return problem(HttpStatus.SERVICE_UNAVAILABLE, "PROJECTION_UNAVAILABLE", ex.getMessage());
+    @ExceptionHandler(RateLimitExceededException.class)
+    public ResponseEntity<ProblemDetail> handleRateLimited(RateLimitExceededException ex) {
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                .header(HttpHeaders.RETRY_AFTER, String.valueOf(ex.getRetryAfterSeconds()))
+                .body(problem(HttpStatus.TOO_MANY_REQUESTS, "RATE_LIMITED", ex.getMessage()));
+    }
+
+    @ExceptionHandler(InsufficientDataException.class)
+    public ProblemDetail handleInsufficientData(InsufficientDataException ex) {
+        return problem(HttpStatus.UNPROCESSABLE_ENTITY, "INSUFFICIENT_DATA", ex.getMessage());
+    }
+
+    @ExceptionHandler(InvalidRequestException.class)
+    public ProblemDetail handleInvalidRequest(InvalidRequestException ex) {
+        return problem(HttpStatus.BAD_REQUEST, ex.getCode(), ex.getMessage());
     }
 
     @ExceptionHandler(Exception.class)

@@ -14,7 +14,6 @@ The entire frontend lives here. Contains:
   - `MetricCard`: single climate metric with icon and color-coded status
 - **Pure helper functions** (module-level, not React components):
   - `getMetricStatus(metricType, value)`: maps numeric thresholds to `'good'|'warning'|'danger'`
-  - `extractRiskLevel(text)`: parses Gemini projection text for Low/Medium/High risk label
   - `formatNumber(num)`: abbreviates large numbers (e.g. 4713 → "4.7K")
 - **`App` component**: manages all state, fetches data, renders the three-panel layout (nav sidebar | map | data panel)
 
@@ -36,9 +35,8 @@ User selects country (sidebar click or map marker click)
 handleCountrySelect(iso3)
         │
         ├── pan map to countryCoordinates[iso3]
-        └── POST /api/country/{iso3}/projection
+        └── POST /api/countries/{iso3}/projection
                 │
                 ├── setMetrics(data.metrics)    → MetricCard grid
                 └── setProjection(data.projection) → projection card
-                                                       + extractRiskLevel()
 ```

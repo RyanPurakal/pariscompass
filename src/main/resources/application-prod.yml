@@ -5,3 +5,9 @@ app:
     required: true
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:}
+
+# Behind the host's reverse proxy: Tomcat's RemoteIpValve reads X-Forwarded-For right to left,
+# skipping trusted internal proxies, so a client cannot spoof its IP by sending the header itself
+# (unlike trusting the leftmost value). Used for per-client rate limiting.
+server:
+  forward-headers-strategy: native

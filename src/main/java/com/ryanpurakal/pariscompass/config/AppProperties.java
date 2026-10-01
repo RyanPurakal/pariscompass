@@ -6,10 +6,12 @@ import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.util.StringUtils;
 import org.springframework.validation.annotation.Validated;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
@@ -22,11 +24,18 @@ import java.util.Map;
  */
 @Validated
 @ConfigurationProperties(prefix = "app")
-public record AppProperties(@Valid @NotNull Cors cors, @Valid @NotNull Gemini gemini, @Valid Etl etl) {
+public record AppProperties(@Valid @NotNull Cors cors, @Valid @NotNull Gemini gemini, @Valid Etl etl,
+                            @Valid Projection projection, @Valid RateLimit rateLimit) {
 
     public AppProperties {
         if (etl == null) {
             etl = new Etl(false, false, false, Map.of());
+        }
+        if (projection == null) {
+            projection = new Projection(null);
+        }
+        if (rateLimit == null) {
+            rateLimit = new RateLimit(5, 100);
         }
     }
 
@@ -71,5 +80,25 @@ public record AppProperties(@Valid @NotNull Cors cors, @Valid @NotNull Gemini ge
         public Etl {
             sources = sources == null ? Map.of() : Map.copyOf(sources);
         }
+    }
+
+    /**
+     * Projection caching. The cache key already changes when data or prompt change, so the TTL only
+     * bounds how long one model output is reused for unchanged inputs.
+     */
+    public record Projection(Duration cacheTtl) {
+        public Projection {
+            if (cacheTtl == null) {
+                cacheTtl = Duration.ofDays(30);
+            }
+        }
+    }
+
+    /**
+     * Limits on POST /api/countries/{iso3}/projection, the only endpoint that can call a paid model.
+     * The per-client limit is keyed by client IP and is best effort; the global hourly cap is what
+     * bounds model spend no matter how many IPs a caller uses.
+     */
+    public record RateLimit(@Positive int projectionsPerClientPerMinute, @Positive int projectionsPerHourGlobal) {
     }
 }

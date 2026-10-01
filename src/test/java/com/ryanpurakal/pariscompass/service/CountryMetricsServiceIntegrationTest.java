@@ -1,13 +1,12 @@
 package com.ryanpurakal.pariscompass.service;
 
 import com.ryanpurakal.pariscompass.config.AppProperties;
-import com.ryanpurakal.pariscompass.etl.DataSource;
 import com.ryanpurakal.pariscompass.etl.EtlRepository;
-import com.ryanpurakal.pariscompass.etl.EtlService;
 import com.ryanpurakal.pariscompass.etl.SourceFetcher;
 import com.ryanpurakal.pariscompass.exception.CountryNotFoundException;
 import com.ryanpurakal.pariscompass.model.CountryInfo;
 import com.ryanpurakal.pariscompass.model.CountryMetrics;
+import com.ryanpurakal.pariscompass.support.FixtureData;
 import com.ryanpurakal.pariscompass.support.TestcontainersConfiguration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -17,9 +16,6 @@ import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 
-import java.time.Clock;
-import java.time.Instant;
-import java.time.ZoneOffset;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -44,13 +40,7 @@ class CountryMetricsServiceIntegrationTest {
 
     @BeforeEach
     void loadFixtures() {
-        jdbc.execute("TRUNCATE etl_rejection, etl_source_result, observation, etl_run, country, metric, data_source CASCADE");
-        AppProperties props = new AppProperties(properties.cors(), properties.gemini(), new AppProperties.Etl(false, false, true,
-                Map.of(DataSource.OWID_CO2, "classpath:etl/co2.csv",
-                        DataSource.OWID_ENERGY, "classpath:etl/energy.csv",
-                        DataSource.OWID_TEMPERATURE, "classpath:etl/temperature.csv")));
-        new EtlService(etlRepository, fetcher, props,
-                Clock.fixed(Instant.parse("2025-06-01T00:00:00Z"), ZoneOffset.UTC)).runAll();
+        FixtureData.reload(jdbc, etlRepository, fetcher, properties);
     }
 
     @Test

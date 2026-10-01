@@ -138,3 +138,79 @@ Per-source durations for run 1: CO2 3,695 ms, Energy 800 ms, Temperature 705 ms.
 Result: 32 tests, 0 failures, 0 errors. Breakdown: `SourceParserTest` 9, `EtlIntegrationTest` 5, `CountryMetricsServiceIntegrationTest` 4, `GlobalExceptionHandlerTest` 6, `AppPropertiesTest` 6, `GeminiServiceTest` 1, `ParisCompassApplicationTests` 1. The 6 mocked `CountryMetricsServiceTest` tests from Phase 0 were removed along with the CSV loader they tested.
 
 Each Phase 1 commit was also checked out in a separate worktree and run with the same command: a37d8db 20 passing, 734e0de 34 passing, 901608d 32 passing.
+
+## Phase 2: Backend features (2026-10-01)
+
+Routes changed from `/api/country/{iso3}` to `/api/countries/{iso3}` in this phase. The commands in the Phase 0 and Phase 1 sections above are kept as they were run.
+
+### Backend test suite
+
+```bash
+./mvnw clean test   # Docker must be running (Testcontainers)
+```
+
+Result: 89 tests, 0 failures, 0 errors.
+
+| Test class | Tests |
+|---|---|
+| `scoring.AlignmentScorerTest` | 13 |
+| `controller.AnalyticsApiIntegrationTest` | 11 |
+| `etl.SourceParserTest` | 9 |
+| `controller.ProjectionApiIntegrationTest` | 8 |
+| `projection.ProjectionValidatorTest` | 8 |
+| `config.AppPropertiesTest` | 6 |
+| `exception.GlobalExceptionHandlerTest` | 6 |
+| `service.ProjectionServiceTest` | 6 |
+| `etl.EtlIntegrationTest` | 5 |
+| `projection.ProjectionPromptBuilderTest` | 4 |
+| `service.CountryMetricsServiceIntegrationTest` | 4 |
+| `controller.OpenApiDocsIntegrationTest` | 2 |
+| `projection.TrendExtrapolatorTest` | 2 |
+| `ratelimit.ProjectionRateLimiterTest` | 2 |
+| `ratelimit.RateLimitWebTest` | 2 |
+| `ParisCompassApplicationTests` | 1 |
+
+### Query plans on the real data (single `EXPLAIN ANALYZE` runs)
+
+Database: the Phase 1 load (153,633 observations), after `VACUUM ANALYZE observation`.
+
+```bash
+docker compose exec -T postgres psql -U pariscompass -d pariscompass -c "EXPLAIN (ANALYZE, BUFFERS, COSTS OFF) <query>"
+```
+
+| Query | Plan | Execution time |
+|---|---|---|
+| Rankings: `co2_per_capita_t`, 2024, top 50 with `rank()` and country join | Index Only Scan on `idx_observation_metric_year`, **Heap Fetches: 0**, 213 rows | 0.346 ms |
+| Series: USA, 2 metrics, 1990 to 2024 | Bitmap Index Scan on `observation_pkey`, 70 rows | 0.173 ms |
+
+These are planner timings for one execution each, not endpoint latency. Endpoint p50/p95 is measured in Phase 6.
+
+### Live Gemini projections (single requests)
+
+Model `gemini-2.5-flash` via google-genai 1.74.0 with `responseJsonSchema`, prompt version `p1`. Key loaded from a local `.env`; app on the dev profile against the Phase 1 database.
+
+```bash
+./mvnw -DskipTests package
+(set -a; source .env; set +a; PORT=18081 java -jar target/paris-compass-0.0.1-SNAPSHOT.jar) &
+curl -s -X POST localhost:18081/api/countries/USA/projection   # then DEU, IND, then USA three more times
+```
+
+| Country | Status | Attempts | Server latency (`latencyMs`) | Tokens in / out (app log) |
+|---|---|---|---|---|
+| USA | VALID | 1 | 16,829 ms | 1,752 / 450 |
+| DEU | VALID | 1 | 14,291 ms | 1,706 / 431 |
+| IND | VALID | 1 | 13,852 ms | 1,715 / 489 |
+
+All three passed schema and semantic validation on the first attempt (3 of 3; too few to quote as a validity rate).
+
+Repeat `POST /api/countries/USA/projection` with unchanged inputs: served from the `projection` table (`cached: true`) in 0.086 s, 0.041 s and 0.032 s (curl `time_total`, single samples). Phase 6 measures cached vs. uncached latency properly.
+
+### Behavior verified by tests (not performance numbers)
+
+- 5 concurrent projection requests for the same inputs cause **1** model call and **1** stored row (`ProjectionApiIntegrationTest.concurrentRequestsShareOneModelCall`, fake model with a 500 ms delay).
+- Changing one observation changes the input hash and triggers a new model call; an entry older than the TTL is not reused; a fallback caused by a model failure is stored but not reused.
+- A third projection request within a minute at a limit of 2 returns 429 with `Retry-After` (`RateLimitWebTest`).
+
+### Alignment scores
+
+Computed from the real data; the table and inputs are in [SCORING.md](SCORING.md#results-on-real-data). Command: `curl -s localhost:18081/api/countries/{ISO3}/alignment`.

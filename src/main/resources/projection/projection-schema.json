@@ -1,0 +1,51 @@
+{
+  "title": "CountryProjection",
+  "description": "Five-year CO2 projection for one country, grounded in the historical data in the prompt.",
+  "type": "object",
+  "properties": {
+    "summary": {
+      "type": "string",
+      "minLength": 50,
+      "maxLength": 1500,
+      "description": "3 to 6 sentences explaining the projection and how it follows from the historical data."
+    },
+    "co2Direction": {
+      "type": "string",
+      "enum": ["increasing", "decreasing", "stable"],
+      "description": "Direction from the last observed year to the final projected year, using the rule in the prompt."
+    },
+    "projectedCo2Mt": {
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 5,
+      "description": "Projected territorial CO2 emissions in million tonnes for each of the next five years, in order.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "year": { "type": "integer" },
+          "co2Mt": { "type": "number", "minimum": 0 }
+        },
+        "required": ["year", "co2Mt"],
+        "additionalProperties": false
+      }
+    },
+    "keyDrivers": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 5,
+      "items": { "type": "string", "minLength": 3, "maxLength": 200 }
+    },
+    "risks": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 5,
+      "items": { "type": "string", "minLength": 3, "maxLength": 200 }
+    },
+    "confidence": {
+      "type": "string",
+      "enum": ["low", "medium", "high"]
+    }
+  },
+  "required": ["summary", "co2Direction", "projectedCo2Mt", "keyDrivers", "risks", "confidence"],
+  "additionalProperties": false
+}

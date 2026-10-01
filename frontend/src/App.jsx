@@ -119,33 +119,8 @@ function getMetricStatus(metricType, value) {
   return 'neutral'
 }
 
-// Extract risk level from projection text
-function extractRiskLevel(text) {
-  if (!text) return null
-  const upper = text.toUpperCase()
-  
-  // Look for explicit risk statements first
-  if (upper.includes('**HIGH**') || upper.includes('HIGH RISK') || 
-      (upper.includes('HIGH') && upper.includes('RISK'))) return 'high'
-  if (upper.includes('**MEDIUM**') || upper.includes('MEDIUM RISK') || 
-      (upper.includes('MEDIUM') && upper.includes('RISK'))) return 'medium'
-  if (upper.includes('**LOW**') || upper.includes('LOW RISK') || 
-      (upper.includes('LOW') && upper.includes('RISK'))) return 'low'
-  
-  // Look for risk level mentions in context
-  const riskPattern = /(?:RISK LEVEL|ALIGNMENT RISK|RISK)[:\s]+(LOW|MEDIUM|HIGH)/i
-  const match = text.match(riskPattern)
-  if (match) {
-    const level = match[1].toLowerCase()
-    if (['low', 'medium', 'high'].includes(level)) return level
-  }
-  
-  // Fallback: look for standalone risk words
-  if (upper.includes('HIGH') && !upper.includes('HIGHER') && !upper.includes('HIGHLY')) return 'high'
-  if (upper.includes('LOW')) return 'low'
-  
-  return 'medium' // default
-}
+// Paris risk comes from the deterministic alignment band (backend scoring), never from the AI's text.
+const RISK_BY_BAND = { HIGH: 'low', MEDIUM: 'medium', LOW: 'high' }
 
 // Format large numbers
 function formatNumber(num) {
@@ -217,7 +192,7 @@ function App() {
       const controller = new AbortController()
       const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 second timeout
       
-      const response = await fetch(`${API_BASE}/country/${iso3}/projection`, {
+      const response = await fetch(`${API_BASE}/countries/${iso3}/projection`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -262,7 +237,7 @@ function App() {
   }, [countries, searchQuery])
 
   const selectedCoords = selectedCountry ? countryCoordinates[selectedCountry] : null
-  const riskLevel = projection ? extractRiskLevel(projection.projection) : null
+  const riskLevel = projection?.alignmentBand ? RISK_BY_BAND[projection.alignmentBand] : null
 
   return (
     <div className="app-container">
@@ -516,13 +491,13 @@ function App() {
                     )}
                     
                     <div className="projection-meta">
-                      Model: {projection.model} • Generated: {new Date(projection.generatedAt).toLocaleString()}
+                      {projection.generatedBy === 'model' ? `Model: ${projection.model}` : 'Statistical fallback (trend extrapolation)'}
+                      {' • '}Generated: {new Date(projection.generatedAt).toLocaleString()}
+                      {projection.alignmentScore != null && ` • Alignment score: ${projection.alignmentScore}/100`}
                     </div>
-                    
+
                     <div className="projection-text">
-                      {projection.projection.split('\n').map((para, i) => (
-                        para.trim() && <p key={i}>{para.trim()}</p>
-                      ))}
+                      <p>{projection.projection.summary}</p>
                     </div>
                   </div>
                 )}
