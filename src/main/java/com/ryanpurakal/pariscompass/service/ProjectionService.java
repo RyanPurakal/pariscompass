@@ -1,6 +1,21 @@
 package com.ryanpurakal.pariscompass.service;
 
 import com.ryanpurakal.pariscompass.domain.Country;
+import com.ryanpurakal.pariscompass.config.AppProperties;
+import com.ryanpurakal.pariscompass.domain.ProjectionRecord;
+import com.ryanpurakal.pariscompass.repository.ProjectionRecordRepository;
+import com.ryanpurakal.pariscompass.scoring.AlignmentScorer;
+import org.springframework.data.domain.Limit;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.time.Duration;
+import java.util.HexFormat;
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import com.ryanpurakal.pariscompass.etl.MetricDefinition;
 import com.ryanpurakal.pariscompass.exception.CountryNotFoundException;
 import com.ryanpurakal.pariscompass.exception.InsufficientDataException;
@@ -31,6 +46,13 @@ import java.util.stream.Collectors;
  * load history, compute the alignment score (deterministic), build a grounded prompt, call the model,
  * validate, retry once with the validation errors, and otherwise fall back to trend extrapolation.
  * The response always says which path produced it.
+ *
+ * Every result is stored. Before calling the model, the newest reusable stored result for the same
+ * input hash and model (within the TTL) is returned instead. Concurrent requests for the same inputs
+ * share one in-flight generation, so a burst of clicks causes one model call, not several. That
+ * coalescing is per JVM; several instances would need a shared lock (e.g. a Postgres advisory lock).
+ * No database connection is held while the model runs: reads and the final insert are separate,
+ * short transactions.
  */
 @Slf4j
 @Service
@@ -38,6 +60,7 @@ public class ProjectionService {
     static final int MAX_ATTEMPTS = 2;
     static final int MIN_WINDOW_POINTS = 6;
     static final int WINDOW_YEARS = 10;
+    static final long AWAIT_SECONDS = 90;
 
     private final CountryRepository countries;
     private final AnalyticsRepository analytics;
@@ -46,10 +69,14 @@ public class ProjectionService {
     private final ProjectionValidator validator;
     private final ProjectionModel model;
     private final Clock clock;
+    private final ProjectionRecordRepository records;
+    private final Duration cacheTtl;
+    private final ConcurrentHashMap<String, CompletableFuture<ProjectionResponse>> inFlight = new ConcurrentHashMap<>();
 
     public ProjectionService(CountryRepository countries, AnalyticsRepository analytics, AlignmentService alignmentService,
                              ProjectionSchema schema, ProjectionValidator validator,
-                             ObjectProvider<ProjectionModel> model, Clock clock) {
+                             ObjectProvider<ProjectionModel> model, Clock clock,
+                             ProjectionRecordRepository records, AppProperties properties) {
         this.countries = countries;
         this.analytics = analytics;
         this.alignmentService = alignmentService;
@@ -57,6 +84,8 @@ public class ProjectionService {
         this.validator = validator;
         this.model = model.getIfAvailable();
         this.clock = clock;
+        this.records = records;
+        this.cacheTtl = properties.projection().cacheTtl();
         if (this.model == null) {
             log.warn("No AI model configured (GEMINI_API_KEY unset): projections use trend extrapolation");
         }
@@ -64,7 +93,75 @@ public class ProjectionService {
 
     public ProjectionResponse project(String iso3) {
         ProjectionInput input = prepare(iso3);
-        return generate(input);
+        String modelName = model == null ? null : model.name();
+        Optional<ProjectionResponse> cached = findReusable(input, modelName);
+        if (cached.isPresent()) {
+            return cached.get();
+        }
+        String key = input.iso3() + ":" + input.inputHash() + ":" + modelName;
+        CompletableFuture<ProjectionResponse> mine = new CompletableFuture<>();
+        CompletableFuture<ProjectionResponse> running = inFlight.putIfAbsent(key, mine);
+        if (running != null) {
+            log.info("{}: joining in-flight projection", iso3);
+            return await(running).asCached();
+        }
+        try {
+            // Another request may have finished and stored a result between the lookup and putIfAbsent.
+            ProjectionResponse result = findReusable(input, modelName).orElseGet(() -> store(input, generate(input)));
+            mine.complete(result);
+            return result;
+        } catch (RuntimeException e) {
+            mine.completeExceptionally(e);
+            throw e;
+        } finally {
+            inFlight.remove(key, mine);
+        }
+    }
+
+    public List<ProjectionResponse> history(String iso3, int limit) {
+        countries.findById(iso3).orElseThrow(() -> new CountryNotFoundException(iso3));
+        return records.findByIso3OrderByCreatedAtDesc(iso3, Limit.of(limit)).stream()
+                .map(r -> toResponse(r, false)).toList();
+    }
+
+    private Optional<ProjectionResponse> findReusable(ProjectionInput in, String modelName) {
+        return records.findReusable(in.iso3(), in.inputHash(), modelName, Instant.now(clock).minus(cacheTtl), Limit.of(1))
+                .stream().findFirst().map(r -> toResponse(r, true));
+    }
+
+    private ProjectionResponse store(ProjectionInput in, ProjectionResponse r) {
+        ProjectionRecord saved = records.save(ProjectionRecord.builder()
+                .iso3(r.iso3()).createdAt(r.generatedAt()).generatedBy(r.generatedBy()).model(r.model())
+                .promptVersion(r.promptVersion()).inputHash(in.inputHash()).status(r.status())
+                .attempts((short) r.attempts()).fallbackReason(r.fallbackReason()).validationErrors(r.validationErrors())
+                .latencyMs((int) r.latencyMs()).baseYear((short) r.baseYear()).baseYearCo2Mt(r.baseYearCo2Mt())
+                .alignmentScore(r.alignmentScore()).alignmentBand(r.alignmentBand() == null ? null : r.alignmentBand().name())
+                .output(r.projection())
+                .build());
+        return toResponse(saved, false);
+    }
+
+    private ProjectionResponse toResponse(ProjectionRecord r, boolean cached) {
+        return new ProjectionResponse(r.getId(), r.getIso3(), countryName(r.getIso3()), r.getGeneratedBy(), r.getModel(),
+                r.getPromptVersion(), r.getStatus(), r.getAttempts(), r.getFallbackReason(), r.getValidationErrors(),
+                r.getCreatedAt(), cached, r.getLatencyMs(), r.getBaseYear(), r.getBaseYearCo2Mt(), r.getAlignmentScore(),
+                r.getAlignmentBand() == null ? null : AlignmentScorer.Band.valueOf(r.getAlignmentBand()), r.getOutput());
+    }
+
+    private String countryName(String iso3) {
+        return countries.findById(iso3).map(Country::getName).orElse(iso3);
+    }
+
+    /** Waits for another request's generation: at most two model calls plus margin. */
+    private static ProjectionResponse await(CompletableFuture<ProjectionResponse> running) {
+        try {
+            return running.orTimeout(AWAIT_SECONDS, TimeUnit.SECONDS).join();
+        } catch (CompletionException e) {
+            if (e.getCause() instanceof RuntimeException re) {
+                throw re;
+            }
+            throw e;
+        }
     }
 
     /** Everything the projection depends on, gathered before any model call. */
@@ -86,7 +183,8 @@ public class ProjectionService {
         }
         AlignmentResponse alignment = alignmentService.score(iso3);
         String prompt = ProjectionPromptBuilder.build(iso3, country.getName(), history, last.year(), last.value(), alignment);
-        return new ProjectionInput(iso3, country.getName(), last.year(), last.value(), window, alignment, prompt);
+        String hash = sha256(ProjectionPromptBuilder.PROMPT_VERSION + "\n" + prompt);
+        return new ProjectionInput(iso3, country.getName(), last.year(), last.value(), window, alignment, prompt, hash);
     }
 
     ProjectionResponse generate(ProjectionInput in) {
@@ -134,7 +232,15 @@ public class ProjectionService {
                 in.alignment().score(), in.alignment().band(), output);
     }
 
+    private static String sha256(String s) {
+        try {
+            return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(s.getBytes(StandardCharsets.UTF_8)));
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("SHA-256 is required by every JVM", e);
+        }
+    }
+
     record ProjectionInput(String iso3, String name, int baseYear, double baseYearCo2Mt, List<SeriesPoint> window,
-                           AlignmentResponse alignment, String prompt) {
+                           AlignmentResponse alignment, String prompt, String inputHash) {
     }
 }

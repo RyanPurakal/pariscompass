@@ -10,6 +10,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.util.StringUtils;
 import org.springframework.validation.annotation.Validated;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
@@ -22,11 +23,15 @@ import java.util.Map;
  */
 @Validated
 @ConfigurationProperties(prefix = "app")
-public record AppProperties(@Valid @NotNull Cors cors, @Valid @NotNull Gemini gemini, @Valid Etl etl) {
+public record AppProperties(@Valid @NotNull Cors cors, @Valid @NotNull Gemini gemini, @Valid Etl etl,
+                            @Valid Projection projection) {
 
     public AppProperties {
         if (etl == null) {
             etl = new Etl(false, false, false, Map.of());
+        }
+        if (projection == null) {
+            projection = new Projection(null);
         }
     }
 
@@ -70,6 +75,18 @@ public record AppProperties(@Valid @NotNull Cors cors, @Valid @NotNull Gemini ge
     public record Etl(boolean runOnStartup, boolean exitAfterRun, boolean force, Map<DataSource, String> sources) {
         public Etl {
             sources = sources == null ? Map.of() : Map.copyOf(sources);
+        }
+    }
+
+    /**
+     * Projection caching. The cache key already changes when data or prompt change, so the TTL only
+     * bounds how long one model output is reused for unchanged inputs.
+     */
+    public record Projection(Duration cacheTtl) {
+        public Projection {
+            if (cacheTtl == null) {
+                cacheTtl = Duration.ofDays(30);
+            }
         }
     }
 }

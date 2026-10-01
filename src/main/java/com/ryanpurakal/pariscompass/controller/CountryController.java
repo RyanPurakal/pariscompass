@@ -5,6 +5,7 @@ import com.ryanpurakal.pariscompass.model.CountryInfo;
 import com.ryanpurakal.pariscompass.model.CountryMetrics;
 import com.ryanpurakal.pariscompass.model.CountryProjectionResponse;
 import com.ryanpurakal.pariscompass.model.CountrySeriesResponse;
+import com.ryanpurakal.pariscompass.model.ProjectionResponse;
 import com.ryanpurakal.pariscompass.service.AlignmentService;
 import com.ryanpurakal.pariscompass.service.AnalyticsService;
 import com.ryanpurakal.pariscompass.service.CountryMetricsService;
@@ -78,5 +79,13 @@ public class CountryController {
                 .metrics(metrics)
                 .projection(projectionService.project(code))
                 .build();
+    }
+
+    /** Stored projections for a country, newest first: cache entries, fallbacks, and older model or prompt versions. */
+    @GetMapping("/countries/{iso3}/projections")
+    public List<ProjectionResponse> getProjectionHistory(
+            @PathVariable @Pattern(regexp = ISO3_REGEX, message = ISO3_MESSAGE) String iso3,
+            @RequestParam(defaultValue = "20") @Min(1) @Max(100) int limit) {
+        return projectionService.history(iso3.toUpperCase(Locale.ROOT), limit);
     }
 }

@@ -1,7 +1,9 @@
 package com.ryanpurakal.pariscompass.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ryanpurakal.pariscompass.config.AppProperties;
 import com.ryanpurakal.pariscompass.domain.Country;
+import com.ryanpurakal.pariscompass.repository.ProjectionRecordRepository;
 import com.ryanpurakal.pariscompass.exception.InsufficientDataException;
 import com.ryanpurakal.pariscompass.model.AlignmentResponse;
 import com.ryanpurakal.pariscompass.model.ProjectionResponse;
@@ -41,6 +43,7 @@ class ProjectionServiceTest {
     private final AnalyticsRepository analytics = mock(AnalyticsRepository.class);
     private final AlignmentService alignment = mock(AlignmentService.class);
     private final FakeProjectionModel fake = new FakeProjectionModel();
+    private final ProjectionRecordRepository records = mock(ProjectionRecordRepository.class);
 
     record Point(String getMetricCode, int getYear, double getValue) implements AnalyticsRepository.MetricPoint {
     }
@@ -56,6 +59,8 @@ class ProjectionServiceTest {
                 .mapToObj(y -> (AnalyticsRepository.MetricPoint) new Point("co2_total_mt", y, 1000 * Math.pow(0.99, y - 2015)))
                 .toList();
         when(analytics.findSeries(eq("USA"), any(), anyInt(), anyInt())).thenReturn(co2);
+        when(records.findReusable(any(), any(), any(), any(), any())).thenReturn(List.of());
+        when(records.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(alignment.score("USA")).thenReturn(new AlignmentResponse("USA", "United States", "v1", 30.6,
                 AlignmentScorer.Band.LOW, List.of(), null, "d"));
     }
@@ -65,7 +70,9 @@ class ProjectionServiceTest {
                 ? new StaticListableBeanFactory() : new StaticListableBeanFactory(Map.of("model", model));
         ProjectionSchema schema = new ProjectionSchema(MAPPER);
         return new ProjectionService(countries, analytics, alignment, schema, new ProjectionValidator(MAPPER, schema),
-                factory.getBeanProvider(ProjectionModel.class), CLOCK);
+                factory.getBeanProvider(ProjectionModel.class), CLOCK, records,
+                new AppProperties(new AppProperties.Cors(List.of("http://localhost:5173")),
+                        new AppProperties.Gemini("m", "", false), null, null));
     }
 
     private static String validReply(String direction, double... values) {

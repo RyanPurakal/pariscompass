@@ -28,6 +28,8 @@ app:
     required: false
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}
+  projection:
+    cache-ttl: ${PROJECTION_CACHE_TTL:30d}
   etl:
     run-on-startup: false
     exit-after-run: false

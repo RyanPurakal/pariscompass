@@ -32,7 +32,7 @@ public final class FixtureData {
                                        AppProperties properties) {
         truncate(jdbc);
         AppProperties props = new AppProperties(properties.cors(), properties.gemini(),
-                new AppProperties.Etl(false, false, true, SOURCES));
+                new AppProperties.Etl(false, false, true, SOURCES), properties.projection());
         return new EtlService(repository, fetcher, props, CLOCK_2025).runAll();
     }
 }

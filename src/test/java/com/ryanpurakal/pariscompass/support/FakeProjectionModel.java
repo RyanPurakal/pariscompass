@@ -19,6 +19,19 @@ public class FakeProjectionModel implements ProjectionModel {
         return this;
     }
 
+    /** Replies after a delay, to hold a generation in flight while other requests arrive. */
+    public FakeProjectionModel replyAfter(String text, long millis) {
+        script.add(() -> {
+            try {
+                Thread.sleep(millis);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+            return text;
+        });
+        return this;
+    }
+
     public FakeProjectionModel fail(RuntimeException e) {
         script.add(() -> {
             throw e;
@@ -27,9 +40,12 @@ public class FakeProjectionModel implements ProjectionModel {
     }
 
     @Override
-    public synchronized Reply generate(String prompt, Map<String, Object> responseJsonSchema) {
-        prompts.add(prompt);
-        Supplier<String> next = script.poll();
+    public Reply generate(String prompt, Map<String, Object> responseJsonSchema) {
+        Supplier<String> next;
+        synchronized (this) {
+            prompts.add(prompt);
+            next = script.poll();
+        }
         if (next == null) {
             throw new IllegalStateException("FakeProjectionModel: no scripted reply left");
         }
