@@ -28,6 +28,16 @@ app:
     required: false
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}
+  etl:
+    run-on-startup: false
+    exit-after-run: false
+    force: false
+    # Where each source is read from: https://, file: or classpath: locations.
+    # Upstream files change over time; every run records the SHA-256 of what it ingested.
+    sources:
+      owid-co2: https://raw.githubusercontent.com/owid/co2-data/master/owid-co2-data.csv
+      owid-energy: https://raw.githubusercontent.com/owid/energy-data/master/owid-energy-data.csv
+      owid-temperature: https://ourworldindata.org/grapher/annual-temperature-anomalies.csv?v=1&csvType=full&useColumnShortNames=true
 
 management:
   endpoints:

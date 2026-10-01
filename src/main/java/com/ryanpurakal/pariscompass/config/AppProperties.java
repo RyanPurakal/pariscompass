@@ -1,5 +1,6 @@
 package com.ryanpurakal.pariscompass.config;
 
+import com.ryanpurakal.pariscompass.etl.DataSource;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
@@ -10,6 +11,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.validation.annotation.Validated;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Typed, validated view of every {@code app.*} setting. Values come from application*.yml,
@@ -20,7 +22,13 @@ import java.util.List;
  */
 @Validated
 @ConfigurationProperties(prefix = "app")
-public record AppProperties(@Valid @NotNull Cors cors, @Valid @NotNull Gemini gemini) {
+public record AppProperties(@Valid @NotNull Cors cors, @Valid @NotNull Gemini gemini, @Valid Etl etl) {
+
+    public AppProperties {
+        if (etl == null) {
+            etl = new Etl(false, false, false, Map.of());
+        }
+    }
 
     /** Browser origins allowed to call /api. A wildcard is rejected so prod must name its frontend. */
     public record Cors(@NotEmpty(message = "set CORS_ALLOWED_ORIGINS") List<@NotBlank String> allowedOrigins) {
@@ -51,6 +59,17 @@ public record AppProperties(@Valid @NotNull Cors cors, @Valid @NotNull Gemini ge
         public String toString() {
             return "Gemini[model=" + model + ", apiKey=" + (isConfigured() ? "****" : "<unset>")
                     + ", required=" + required + "]";
+        }
+    }
+
+    /**
+     * Ingestion job settings. {@code sources} maps each DataSource to an https://, file: or
+     * classpath: location, so tests and offline runs can point at local files.
+     * {@code force} re-ingests a source even when its file hash matches the last successful run.
+     */
+    public record Etl(boolean runOnStartup, boolean exitAfterRun, boolean force, Map<DataSource, String> sources) {
+        public Etl {
+            sources = sources == null ? Map.of() : Map.copyOf(sources);
         }
     }
 }

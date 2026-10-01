@@ -54,7 +54,7 @@
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
-            <scope>runtime</scope>
+            <!-- Compile scope: the ETL uses the driver's COPY API directly. -->
         </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>

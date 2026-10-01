@@ -1,0 +1,7 @@
+country,year,iso_code,renewables_share_elec,low_carbon_share_elec,renewables_share_energy
+World,2024,,30,40,15
+United States,2024,USA,22.35,40.1,10.875
+Federal Republic of Germany,2024,DEU,59.1,62.3,20.3
+Uganda,2013,UGA,100,100,
+Iceland,2020,ISL,101.5,100,86.126
+Iceland,2021,ISL,NaN,100,85
