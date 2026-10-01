@@ -36,7 +36,7 @@ User selects country (sidebar click or map marker click)
 handleCountrySelect(iso3)
         │
         ├── pan map to countryCoordinates[iso3]
-        └── POST /api/country/{iso3}/projection
+        └── POST /api/countries/{iso3}/projection
                 │
                 ├── setMetrics(data.metrics)    → MetricCard grid
                 └── setProjection(data.projection) → projection card

@@ -217,7 +217,7 @@ function App() {
       const controller = new AbortController()
       const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 second timeout
       
-      const response = await fetch(`${API_BASE}/country/${iso3}/projection`, {
+      const response = await fetch(`${API_BASE}/countries/${iso3}/projection`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

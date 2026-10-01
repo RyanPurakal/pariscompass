@@ -14,8 +14,8 @@ Translate HTTP requests into service calls and HTTP responses. No business logic
 | Method | Path | What it does |
 |--------|------|-------------|
 | `GET`  | `/api/countries` | List all countries (ISO3 + name) |
-| `GET`  | `/api/country/{iso3}` | Current climate metrics for one country |
-| `POST` | `/api/country/{iso3}/projection` | Metrics + Gemini 5-year projection (main endpoint) |
+| `GET`  | `/api/countries/{iso3}` | Current climate metrics for one country |
+| `POST` | `/api/countries/{iso3}/projection` | Metrics + Gemini 5-year projection (main endpoint) |
 
 ## What passes through here
 

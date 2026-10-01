@@ -99,10 +99,10 @@ Returns list of all supported countries.
 ]
 ```
 
-### `GET /api/country/{iso3}`
+### `GET /api/countries/{iso3}`
 Returns climate metrics for a specific country.
 
-**Example:** `GET /api/country/USA`
+**Example:** `GET /api/countries/USA`
 
 **Response:**
 ```json
@@ -129,15 +129,15 @@ Returns climate metrics for a specific country.
 
 `years` gives the year of each value: sources end in different years, so there is no single snapshot year. `renewablesSharePct` is the renewables share of electricity generation.
 
-### `POST /api/country/{iso3}/projection`
+### `POST /api/countries/{iso3}/projection`
 Generates AI projection for a country (combines metrics + projection).
 
-**Example:** `POST /api/country/USA/projection`
+**Example:** `POST /api/countries/USA/projection`
 
 **Response:**
 ```json
 {
-  "metrics": { "...": "same shape as GET /api/country/{iso3}" },
+  "metrics": { "...": "same shape as GET /api/countries/{iso3}" },
   "projection": {
     "country": "United States",
     "projection": "Based on current trends, the United States is projected to...",
@@ -243,7 +243,7 @@ Every error uses the RFC 9457 `application/problem+json` shape:
   "title": "Not Found",
   "status": 404,
   "detail": "No country found with ISO3 code 'XXX'",
-  "instance": "/api/country/XXX",
+  "instance": "/api/countries/XXX",
   "code": "COUNTRY_NOT_FOUND",
   "timestamp": "2026-10-01T19:27:51Z"
 }

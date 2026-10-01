@@ -40,20 +40,20 @@ class GlobalExceptionHandlerTest {
     void unknownCountryReturns404Problem() throws Exception {
         when(metricsService.getLatestMetrics("XXX")).thenThrow(new CountryNotFoundException("XXX"));
 
-        mvc.perform(get("/api/country/xxx"))
+        mvc.perform(get("/api/countries/xxx"))
                 .andExpect(status().isNotFound())
                 .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(jsonPath("$.status").value(404))
                 .andExpect(jsonPath("$.title").value("Not Found"))
                 .andExpect(jsonPath("$.code").value("COUNTRY_NOT_FOUND"))
                 .andExpect(jsonPath("$.detail").value("No country found with ISO3 code 'XXX'"))
-                .andExpect(jsonPath("$.instance").value("/api/country/xxx"))
+                .andExpect(jsonPath("$.instance").value("/api/countries/xxx"))
                 .andExpect(jsonPath("$.timestamp", notNullValue()));
     }
 
     @Test
     void malformedIso3Returns400Problem() throws Exception {
-        mvc.perform(get("/api/country/US1"))
+        mvc.perform(get("/api/countries/US1"))
                 .andExpect(status().isBadRequest())
                 .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(jsonPath("$.code").value("BAD_REQUEST"))
@@ -68,7 +68,7 @@ class GlobalExceptionHandlerTest {
                 "The projection service is temporarily unavailable. Try again later.",
                 new RuntimeException("upstream 429: quota exceeded for key abc123")));
 
-        mvc.perform(post("/api/country/USA/projection"))
+        mvc.perform(post("/api/countries/USA/projection"))
                 .andExpect(status().isServiceUnavailable())
                 .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(jsonPath("$.code").value("PROJECTION_UNAVAILABLE"))
@@ -97,7 +97,7 @@ class GlobalExceptionHandlerTest {
 
     @Test
     void wrongMethodReturns405Problem() throws Exception {
-        mvc.perform(get("/api/country/USA/projection"))
+        mvc.perform(get("/api/countries/USA/projection"))
                 .andExpect(status().isMethodNotAllowed())
                 .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(jsonPath("$.code").value("METHOD_NOT_ALLOWED"));

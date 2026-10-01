@@ -34,13 +34,13 @@ public class CountryController {
         return metricsService.getAllCountries();
     }
 
-    @GetMapping("/country/{iso3}")
+    @GetMapping("/countries/{iso3}")
     public CountryMetrics getCountryMetrics(
             @PathVariable @Pattern(regexp = ISO3_REGEX, message = ISO3_MESSAGE) String iso3) {
         return metricsService.getLatestMetrics(iso3.toUpperCase(Locale.ROOT));
     }
 
-    @PostMapping("/country/{iso3}/projection")
+    @PostMapping("/countries/{iso3}/projection")
     public CountryProjectionResponse getCountryProjection(
             @PathVariable @Pattern(regexp = ISO3_REGEX, message = ISO3_MESSAGE) String iso3) {
         String code = iso3.toUpperCase(Locale.ROOT);
