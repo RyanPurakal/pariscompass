@@ -1,4 +1,4 @@
-# Backend — `hackru.AI`
+# Backend — `com.ryanpurakal.pariscompass`
 
 Spring Boot 3.5 application serving climate metrics and AI projections.
 
@@ -13,7 +13,7 @@ Spring Boot 3.5 application serving climate metrics and AI projections.
 
 ## Entry point
 
-`AiApplication.java` — standard `@SpringBootApplication` bootstrap. No custom startup logic here; `DataLoader` runs its own `@PostConstruct` to load CSVs.
+`ParisCompassApplication.java` — standard `@SpringBootApplication` bootstrap. No custom startup logic here; `DataLoader` runs its own `@PostConstruct` to load CSVs.
 
 ## Request lifecycle
 

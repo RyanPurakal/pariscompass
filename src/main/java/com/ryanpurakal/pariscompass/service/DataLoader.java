@@ -1,4 +1,4 @@
-package hackru.AI.service;
+package com.ryanpurakal.pariscompass.service;
 
 import com.opencsv.CSVReader;
 import com.opencsv.exceptions.CsvException;

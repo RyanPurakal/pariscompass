@@ -1,10 +1,10 @@
-package hackru.AI.service;
+package com.ryanpurakal.pariscompass.service;
 
 import com.google.genai.Client;
 import com.google.genai.types.GenerateContentResponse;
-import hackru.AI.config.GeminiConfig;
-import hackru.AI.model.CountryMetrics;
-import hackru.AI.model.ProjectionResponse;
+import com.ryanpurakal.pariscompass.config.GeminiConfig;
+import com.ryanpurakal.pariscompass.model.CountryMetrics;
+import com.ryanpurakal.pariscompass.model.ProjectionResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

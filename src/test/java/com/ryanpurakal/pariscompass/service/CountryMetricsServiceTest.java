@@ -1,7 +1,7 @@
-package hackru.AI.service;
+package com.ryanpurakal.pariscompass.service;
 
-import hackru.AI.model.CountryInfo;
-import hackru.AI.model.CountryMetrics;
+import com.ryanpurakal.pariscompass.model.CountryInfo;
+import com.ryanpurakal.pariscompass.model.CountryMetrics;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

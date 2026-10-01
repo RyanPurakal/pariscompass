@@ -1,10 +1,10 @@
-package hackru.AI;
+package com.ryanpurakal.pariscompass;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class AiApplicationTests {
+class ParisCompassApplicationTests {
 
 	@Test
 	void contextLoads() {

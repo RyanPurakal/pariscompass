@@ -52,7 +52,7 @@ npm run dev
 
 ```bash
 git clone <repository-url>
-cd hackru-country-data-main
+cd pariscompass
 ```
 
 ### 2. Set Environment Variable
@@ -207,8 +207,8 @@ Data is loaded into memory at application startup for fast access.
 paris-compass/
 ├── src/                              # Spring Boot backend (Java 21)
 │   ├── main/
-│   │   ├── java/hackru/AI/
-│   │   │   ├── AiApplication.java    # Entry point — boots Spring context
+│   │   ├── java/com/ryanpurakal/pariscompass/
+│   │   │   ├── ParisCompassApplication.java # Entry point — boots Spring context
 │   │   │   ├── config/               # Bean wiring: Gemini client, CORS rules
 │   │   │   ├── controller/           # HTTP layer — maps URLs to services
 │   │   │   ├── model/                # DTOs shared between controller & service

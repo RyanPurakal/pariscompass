@@ -1,4 +1,4 @@
-package hackru.AI.model;
+package com.ryanpurakal.pariscompass.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

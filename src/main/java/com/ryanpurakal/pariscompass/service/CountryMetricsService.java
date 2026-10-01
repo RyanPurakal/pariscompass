@@ -1,7 +1,7 @@
-package hackru.AI.service;
+package com.ryanpurakal.pariscompass.service;
 
-import hackru.AI.model.CountryInfo;
-import hackru.AI.model.CountryMetrics;
+import com.ryanpurakal.pariscompass.model.CountryInfo;
+import com.ryanpurakal.pariscompass.model.CountryMetrics;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

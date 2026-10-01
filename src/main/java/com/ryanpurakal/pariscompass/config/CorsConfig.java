@@ -1,4 +1,4 @@
-package hackru.AI.config;
+package com.ryanpurakal.pariscompass.config;
 
 import java.util.Arrays;
 import java.util.List;
