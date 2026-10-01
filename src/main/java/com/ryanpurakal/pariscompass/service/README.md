@@ -1,36 +1,23 @@
 # service: Business Logic
 
-Two services. Each has a single, narrow job. Data is written by the `etl` package and read here.
+Read-side services over Postgres (data is written by the `etl` package), plus projection orchestration.
 
-## Files
+| Service | Job |
+|---------|-----|
+| `CountryMetricsService` | Latest value of each headline metric for a country, each with its own year (`DISTINCT ON`) |
+| `AnalyticsService` | Time series, comparison (2 to 4 countries), rankings, metric catalog; semantic request validation |
+| `AlignmentService` | Loads a country's history and calls the pure `scoring/AlignmentScorer` (see `SCORING.md`) |
+| `ProjectionService` | Prompt, cache lookup by input hash, in-flight coalescing, model call, validation, one retry, fallback, storage |
 
-### `CountryMetricsService.java`
-Builds a `CountryMetrics` snapshot for one ISO3 code from the `observation` table.
-
-Key behaviour:
-- Takes the **latest year of each metric independently** (Postgres `DISTINCT ON`), and reports each value's year in `years`.
-- Throws `CountryNotFoundException` if the ISO3 is unknown (rendered as 404 by `GlobalExceptionHandler`).
-- `getAllCountries()` returns every ingested country, sorted by name.
-
-### `GeminiService.java`
-Sends a structured prompt to the Gemini API and returns a `ProjectionResponse`.
-
-Key behaviour:
-- Results are **cached per ISO3 for 1 hour** using an in-memory `ConcurrentHashMap`. Repeated requests for the same country within the TTL skip the API call.
-- Upstream failures are wrapped in `ProjectionUnavailableException` (rendered as 503); the cause is logged, never returned.
-- `buildPrompt()` formats the `CountryMetrics` fields into a numbered instruction prompt.
-
-## Data flow between services
+## Projection flow
 
 ```
-HTTP request
-     │
-     ▼
-CountryController
-     │
-     ├─ CountryMetricsService.getLatestMetrics(iso3)
-     │       └─ CountryRepository / ObservationRepository (Postgres)
-     │
-     └─ GeminiService.generateProjection(iso3, metrics)
-             └─ Gemini API (external, via Client bean from config/)
+POST /api/countries/{iso3}/projection
+  -> RateLimitInterceptor (429 if over limit)
+  -> ProjectionService.prepare: history + alignment score -> prompt -> input hash   (short read transaction)
+  -> stored projection for (iso3, hash, model) within TTL?  -> return it (cached=true)
+  -> same inputs already in flight?                          -> wait for that result
+  -> ProjectionModel.generate (Gemini, JSON schema)          (no DB connection held)
+  -> ProjectionValidator: JSON, schema, semantics -> retry once with errors -> TrendExtrapolator fallback
+  -> save to projection table                                (short write transaction)
 ```

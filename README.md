@@ -14,7 +14,7 @@ A full-stack web application that provides country-specific climate metrics and 
 ### Backend
 - **Spring Boot 3.5** on Java 21
 - **PostgreSQL 17** with **Flyway** migrations and **Spring Data JPA** (reads) / **JDBC + COPY** (bulk ETL writes)
-- **Google GenAI SDK** for Gemini projections
+- **Google GenAI SDK** (Gemini, JSON-schema output), **networknt json-schema-validator**, **Bucket4j** rate limiting, **springdoc** OpenAPI
 - **Testcontainers** for integration tests against a real Postgres
 
 ### Frontend
@@ -82,73 +82,48 @@ Berkeley Earth's per-country files stopped updating (the US file ends in May 201
 
 ## API Endpoints
 
-### `GET /api/countries`
-Returns list of all supported countries.
+Interactive docs: **Swagger UI at `/swagger-ui.html`**, OpenAPI spec at `/v3/api-docs`.
 
-**Response:**
-```json
-[
-  {
-    "iso3": "USA",
-    "name": "United States"
-  },
-  {
-    "iso3": "IND",
-    "name": "India"
-  }
-]
-```
+| Method | Path | Returns |
+|--------|------|---------|
+| `GET` | `/api/countries` | Every country with data, sorted by name |
+| `GET` | `/api/countries/{iso3}` | Latest value of each headline metric, with the year of each value |
+| `GET` | `/api/countries/{iso3}/series?metrics=&from=&to=` | Time series per metric (default: all metrics, all years) |
+| `GET` | `/api/countries/{iso3}/alignment` | Deterministic Paris alignment score with every component ([SCORING.md](SCORING.md)) |
+| `POST` | `/api/countries/{iso3}/projection` | Five-year CO2 projection (rate limited; see below) |
+| `GET` | `/api/countries/{iso3}/projections?limit=` | Stored projections, newest first |
+| `GET` | `/api/metrics` | Metric catalog: unit, source, coverage, default ranking year |
+| `GET` | `/api/rankings?metric=&year=&order=&limit=` | Countries ranked by one metric in one year |
+| `GET` | `/api/compare?countries=USA,CHN,IND&metric=&from=&to=` | One metric for 2 to 4 countries |
+| `GET` | `/actuator/health` | Liveness, including the database |
 
-### `GET /api/countries/{iso3}`
-Returns climate metrics for a specific country.
+**Rankings default year.** The newest year is often only partly reported (2025 electricity data covers 90 of 212 countries), so `year` defaults to the latest year with at least 90% of the metric's best coverage. The response states the year and `countriesWithData`.
 
-**Example:** `GET /api/countries/USA`
+### Projections
 
-**Response:**
-```json
-{
-  "iso3": "USA",
-  "name": "United States",
-  "co2PerCapita": 14.197,
-  "co2TotalMt": 4904.12,
-  "temperatureAnomalyC": 0.83337736,
-  "renewablesSharePct": 25.638,
-  "years": {
-    "co2PerCapita": 2024,
-    "co2TotalMt": 2024,
-    "temperatureAnomalyC": 2025,
-    "renewablesSharePct": 2025
-  },
-  "source": {
-    "co2": "Our World in Data: CO2 and Greenhouse Gas Emissions",
-    "temp": "Our World in Data: Annual temperature anomalies (Copernicus ERA5)",
-    "renewables": "Our World in Data: Energy"
-  }
-}
-```
+`POST /api/countries/{iso3}/projection` works like this:
 
-`years` gives the year of each value: sources end in different years, so there is no single snapshot year. `renewablesSharePct` is the renewables share of electricity generation.
+1. Builds a prompt (version `p1`) from the country's last 30 years of CO2, per-capita, electricity-mix and temperature data, plus the alignment score as fixed context.
+2. Returns a stored projection if one exists for the same input hash (SHA-256 of prompt version + prompt) and model, younger than `PROJECTION_CACHE_TTL` (default 30 days). New data or a new prompt changes the hash, so stale projections are never served.
+3. Otherwise asks Gemini for JSON constrained by [`projection-schema.json`](src/main/resources/projection/projection-schema.json), then validates the reply against the same schema plus semantic checks: years follow the last observed year, values within 50-150% of it, and the stated direction matches the numbers.
+4. Retries once with the validation errors. If that fails, or no model is configured, returns a trend extrapolation labeled `generatedBy: "trend-extrapolation"`, `status: "FALLBACK"`.
+5. Stores every result in the `projection` table with model, prompt version, status, attempts, latency and the output.
 
-### `POST /api/countries/{iso3}/projection`
-Generates AI projection for a country (combines metrics + projection).
+Concurrent requests for the same inputs share one model call. Limits: 5 requests per client IP per minute and 100 per hour in total; over the limit returns 429 with `Retry-After`.
 
-**Example:** `POST /api/countries/USA/projection`
-
-**Response:**
 ```json
 {
-  "metrics": { "...": "same shape as GET /api/countries/{iso3}" },
+  "id": 1, "iso3": "USA", "generatedBy": "model", "model": "gemini-2.5-flash", "promptVersion": "p1",
+  "status": "VALID", "attempts": 1, "cached": false, "baseYear": 2024, "baseYearCo2Mt": 4904.12,
+  "alignmentScore": 30.6, "alignmentBand": "LOW",
   "projection": {
-    "country": "United States",
-    "projection": "Based on current trends, the United States is projected to...",
-    "model": "gemini-2.5-flash",
-    "generatedAt": "2024-01-15T10:30:00Z"
+    "summary": "The United States has demonstrated a consistent long-term decline ...",
+    "co2Direction": "decreasing",
+    "projectedCo2Mt": [{"year": 2025, "co2Mt": 4854.12}, "... 5 entries"],
+    "keyDrivers": ["..."], "risks": ["..."], "confidence": "medium"
   }
 }
 ```
-
-### `GET /actuator/health`
-Spring Boot Actuator health endpoint.
 
 ## Data Sources
 
@@ -187,9 +162,12 @@ pariscompass/
    PostgreSQL ── country, metric, observation(iso3, metric_code, year, value)
         ▲
         │  JPA reads
-  CountryMetricsService ◄── CountryController ◄── React (App.jsx)
-                                   │
-                                   └──► GeminiService ──► Google Gemini API
+  Analytics / Alignment / Metrics services ◄── controllers ◄── React (App.jsx)
+                                                    │
+               ProjectionService ◄──────────────────┘ (rate limited)
+                 │  prompt from history + alignment score
+                 ├──► projection table (cache by input hash, history)
+                 └──► ProjectionModel ──► Google Gemini API (JSON schema output)
 ```
 
 **Key design choices:**
@@ -197,7 +175,9 @@ pariscompass/
 - **Flyway owns the schema**; Hibernate runs with `ddl-auto=validate` and only checks that entities match it.
 - **JDBC for bulk writes, JPA for reads**: about 150k values per load is set-based work where per-entity persistence adds overhead for no benefit.
 - **The ETL is a profile of the API artifact**, not a separate service: one build, shared schema and config.
-- Gemini projections are cached per country for 1 hour to avoid redundant API calls.
+- **The alignment score is computed in Java, never by the LLM**; the model only sees it as context.
+- **The model is not trusted**: its JSON is validated against the same schema it was constrained by, plus semantic checks, with one retry and a labeled statistical fallback.
+- **Projections are cached by a hash of their inputs**, not just by country, and stored permanently so outputs can be compared across models and prompt versions.
 - CORS origins come from `CORS_ALLOWED_ORIGINS` (dev default `http://localhost:5173`).
 
 ## Configuration
@@ -207,11 +187,14 @@ Settings live in `src/main/resources/application.yml` with per-profile overrides
 | Variable | Default | Notes |
 |----------|---------|-------|
 | `SPRING_PROFILES_ACTIVE` | `dev` | `dev`, `test` or `prod` |
-| `GEMINI_API_KEY` | none | Optional in dev (projections return 503), required in prod |
+| `GEMINI_API_KEY` | none | Optional in dev (projections use the statistical fallback), required in prod |
 | `GEMINI_MODEL` | `gemini-2.5-flash` | |
 | `CORS_ALLOWED_ORIGINS` | `http://localhost:5173` in dev | Comma-separated; required in prod, `*` rejected |
 | `DATABASE_URL` / `DATABASE_USERNAME` / `DATABASE_PASSWORD` | local compose DB in dev | Required in prod |
 | `APP_ETL_FORCE` | `false` | Re-ingest sources even if their file hash is unchanged |
+| `PROJECTION_CACHE_TTL` | `30d` | How long one model output is reused for unchanged inputs |
+| `RATE_LIMIT_PER_CLIENT_PER_MINUTE` | `5` | Projection requests per client IP |
+| `RATE_LIMIT_GLOBAL_PER_HOUR` | `100` | Projection requests across all clients |
 | `PORT` | `8081` | |
 | `VITE_API_BASE_URL` (frontend) | `http://localhost:8081/api` | Baked into the JS bundle at build time |
 
@@ -254,7 +237,9 @@ Every error uses the RFC 9457 `application/problem+json` shape:
 | 400 | `BAD_REQUEST` | ISO3 path variable is not three letters |
 | 404 | `COUNTRY_NOT_FOUND` | ISO3 is well formed but not in the dataset |
 | 404 / 405 | `NOT_FOUND` / `METHOD_NOT_ALLOWED` | Unknown route or wrong HTTP method |
-| 503 | `PROJECTION_UNAVAILABLE` | Gemini is not configured or the upstream call failed |
+| 400 | `UNKNOWN_METRIC`, `INVALID_YEAR_RANGE`, `INVALID_COUNTRY_LIST`, `INVALID_ORDER` | Semantically invalid query |
+| 422 | `INSUFFICIENT_DATA` | Projection requested for a country with fewer than 6 of the last 10 years of CO2 data |
+| 429 | `RATE_LIMITED` | Projection rate limit exceeded; see `Retry-After` |
 | 500 | `INTERNAL_ERROR` | Anything unexpected; details are logged, never returned |
 
 Missing data fields return `null` in JSON responses.
