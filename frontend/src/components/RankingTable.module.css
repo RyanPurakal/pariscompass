@@ -1,0 +1,81 @@
+.scroller {
+  max-height: 560px;
+  overflow: auto;
+  border-radius: var(--radius);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--step--1);
+}
+
+thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--surface);
+  text-align: left;
+  font-weight: 600;
+  color: var(--ink-3);
+  border-bottom: 1px solid var(--rule);
+  padding: 0;
+}
+
+th button {
+  all: unset;
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 0.72rem;
+}
+
+th button:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+}
+
+th[aria-sort='ascending'] button::after {
+  content: ' ↑';
+}
+
+th[aria-sort='descending'] button::after {
+  content: ' ↓';
+}
+
+thead th.num:not(:has(button)) {
+  padding: 10px 12px;
+  white-space: nowrap;
+  letter-spacing: 0.06em;
+  font-size: 0.72rem;
+}
+
+td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.num {
+  text-align: right;
+}
+
+th.num button {
+  text-align: right;
+}
+
+tbody tr[data-active] {
+  background: var(--surface-sunken);
+}
+
+td a {
+  text-decoration: none;
+}
+
+td a:hover {
+  text-decoration: underline;
+}

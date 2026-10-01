@@ -1,0 +1,101 @@
+.figure {
+  margin: 0;
+  display: grid;
+  gap: 10px;
+  transition: opacity 200ms ease;
+}
+
+.figure[data-stale] {
+  opacity: 0.55;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--step--1);
+  color: var(--ink-2);
+}
+
+.legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.plot :global(.recharts-surface) {
+  overflow: visible;
+}
+
+.grid line {
+  stroke: var(--hairline);
+}
+
+.axis :global(.recharts-cartesian-axis-tick-value) {
+  fill: var(--ink-3);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.axis :global(.recharts-cartesian-axis-line) {
+  stroke: var(--rule);
+}
+
+.zero line {
+  stroke: var(--rule);
+  stroke-width: 1;
+}
+
+.crosshair {
+  stroke: var(--rule);
+  stroke-width: 1;
+}
+
+.activeDot {
+  stroke: var(--surface);
+}
+
+.endLabel {
+  fill: var(--ink-2);
+  font-size: 12px;
+}
+
+.tooltip {
+  display: grid;
+  gap: 4px;
+  min-width: 160px;
+  padding: 10px 12px;
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow);
+  font-size: var(--step--1);
+}
+
+.tooltipYear {
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.tooltipRow {
+  display: grid;
+  grid-template-columns: auto auto 1fr;
+  align-items: center;
+  gap: 8px;
+}
+
+.tooltipRow strong {
+  font-variant-numeric: tabular-nums;
+}
+
+.tooltipRow span {
+  color: var(--ink-2);
+}
+
+.empty {
+  color: var(--ink-3);
+  padding: 24px 0;
+}

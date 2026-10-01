@@ -1,6 +1,7 @@
 package com.ryanpurakal.pariscompass.scoring;
 
 import com.ryanpurakal.pariscompass.model.SeriesPoint;
+import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -187,9 +188,10 @@ public final class AlignmentScorer {
      * One input to the score. {@code weight} is the nominal weight; {@code effectiveWeight} is after
      * rescaling for missing components (null when this component is missing).
      */
-    public record Component(String key, double weight, Double effectiveWeight, boolean available, String metric,
-                            Double value, String unit, Integer fromYear, Integer toYear, int points,
-                            Double subScore, String note) {
+    public record Component(String key, double weight, @Schema(nullable = true) Double effectiveWeight,
+                            boolean available, String metric, @Schema(nullable = true) Double value, String unit,
+                            @Schema(nullable = true) Integer fromYear, @Schema(nullable = true) Integer toYear, int points,
+                            @Schema(nullable = true) Double subScore, @Schema(nullable = true) String note) {
 
         static Component of(String key, double weight, String metric, double value, String unit, Window w, double subScore) {
             return new Component(key, weight, null, true, metric, round(value, 3), unit, w.fromYear(), w.toYear(),

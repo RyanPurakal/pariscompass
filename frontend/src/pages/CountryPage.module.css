@@ -1,0 +1,89 @@
+.page {
+  display: grid;
+  gap: 28px;
+}
+
+.header {
+  display: grid;
+  gap: 12px;
+  justify-items: start;
+}
+
+.header a:not(:global(.button)) {
+  text-decoration: none;
+}
+
+.name {
+  font-size: var(--step-4);
+}
+
+.code {
+  font-family: var(--font-ui);
+  font-size: 0.32em;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  color: var(--ink-3);
+  vertical-align: middle;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  padding: 2px 10px;
+}
+
+.tiles {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(min(150px, 45%), 1fr));
+}
+
+.split {
+  display: grid;
+  gap: 24px;
+  align-items: start;
+}
+
+@media (min-width: 1080px) {
+  .split {
+    grid-template-columns: minmax(320px, 1fr) minmax(0, 1.6fr);
+  }
+}
+
+.trends {
+  display: grid;
+  gap: 18px;
+}
+
+.trendsHeader {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 16px;
+}
+
+.sectionTitle {
+  font-size: var(--step-3);
+}
+
+.charts {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 440px), 1fr));
+}
+
+.chartCard {
+  padding: 18px 18px 14px;
+  display: grid;
+  gap: 8px;
+}
+
+.chartTitle {
+  font-family: var(--font-ui);
+  font-size: var(--step-0);
+  font-weight: 600;
+}
+
+.chartTitle span {
+  font-weight: 400;
+  color: var(--ink-3);
+  margin-left: 6px;
+}

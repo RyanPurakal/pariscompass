@@ -1,0 +1,81 @@
+.panel {
+  display: grid;
+  gap: 16px;
+  padding: 24px;
+  align-content: start;
+}
+
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px 20px;
+}
+
+.title {
+  font-size: var(--step-2);
+  margin-top: 4px;
+}
+
+.hint {
+  color: var(--ink-2);
+  max-width: 62ch;
+}
+
+.notice {
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--status-warning) 18%, var(--surface));
+}
+
+.provenance {
+  display: grid;
+  gap: 2px;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  border-left: 3px solid var(--focus);
+  background: var(--surface-sunken);
+  font-size: var(--step--1);
+}
+
+.provenance[data-kind='fallback'] {
+  border-left-color: var(--ink-3);
+}
+
+.provenance span {
+  color: var(--ink-3);
+}
+
+.summary {
+  font-family: var(--font-display);
+  font-size: var(--step-1);
+  line-height: 1.5;
+  max-width: 68ch;
+}
+
+.lists {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.lists ul {
+  margin: 6px 0 0;
+  padding-left: 18px;
+  color: var(--ink-2);
+}
+
+.listTitle {
+  font-family: var(--font-ui);
+  font-size: var(--step--1);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.meta {
+  font-size: var(--step--1);
+  color: var(--ink-3);
+}

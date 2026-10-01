@@ -34,7 +34,8 @@ public class MetricController {
 
     @Operation(summary = "Countries ranked by one metric in one year",
             description = "year defaults to the latest year with at least 90% of the metric's best coverage. Ties share a rank.")
-    @ApiResponse(responseCode = "400", description = "UNKNOWN_METRIC, INVALID_ORDER, or a parameter out of range", useReturnTypeSchema = false)
+    @ApiResponse(responseCode = "200", description = "Ranked countries", useReturnTypeSchema = true)
+    @ApiResponse(responseCode = "400", description = "UNKNOWN_METRIC, INVALID_ORDER, or a parameter out of range")
     @GetMapping("/rankings")
     public RankingResponse rankings(
             @Parameter(example = "co2_per_capita_t") @RequestParam String metric,
@@ -45,8 +46,9 @@ public class MetricController {
     }
 
     @Operation(summary = "One metric for 2 to 4 countries, side by side")
-    @ApiResponse(responseCode = "400", description = "UNKNOWN_METRIC, INVALID_COUNTRY_LIST, INVALID_YEAR_RANGE", useReturnTypeSchema = false)
-    @ApiResponse(responseCode = "404", description = "COUNTRY_NOT_FOUND", useReturnTypeSchema = false)
+    @ApiResponse(responseCode = "200", description = "One series per country, in request order", useReturnTypeSchema = true)
+    @ApiResponse(responseCode = "400", description = "UNKNOWN_METRIC, INVALID_COUNTRY_LIST, INVALID_YEAR_RANGE")
+    @ApiResponse(responseCode = "404", description = "COUNTRY_NOT_FOUND")
     @GetMapping("/compare")
     public ComparisonResponse compare(
             @Parameter(description = "2 to 4 comma-separated ISO3 codes", example = "USA,CHN,IND")

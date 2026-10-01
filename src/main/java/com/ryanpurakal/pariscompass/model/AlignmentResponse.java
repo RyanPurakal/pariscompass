@@ -1,5 +1,6 @@
 package com.ryanpurakal.pariscompass.model;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import com.ryanpurakal.pariscompass.scoring.AlignmentScorer;
 
 import java.util.List;
@@ -9,9 +10,9 @@ public record AlignmentResponse(
         String iso3,
         String name,
         String formulaVersion,
-        Double score,
-        AlignmentScorer.Band band,
+        @Schema(nullable = true) Double score,
+        @Schema(nullable = true) AlignmentScorer.Band band,
         List<AlignmentScorer.Component> components,
-        String reason,
+        @Schema(nullable = true) String reason,
         String disclaimer) {
 }

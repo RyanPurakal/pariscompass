@@ -1,0 +1,102 @@
+.panel {
+  display: grid;
+  gap: 20px;
+  padding: 24px;
+  align-content: start;
+}
+
+.hero {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 18px;
+}
+
+/* The single hero figure on the page: sans, proportional figures. */
+.score {
+  font-size: clamp(3rem, 2rem + 4vw, 4.5rem);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+
+.outOf {
+  font-size: 0.32em;
+  font-weight: 500;
+  color: var(--ink-3);
+  margin-left: 4px;
+  letter-spacing: 0;
+}
+
+.band {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+
+.good .bandDisc {
+  fill: var(--status-good);
+}
+
+.warning .bandDisc {
+  fill: #b07800;
+}
+
+.critical .bandDisc {
+  fill: var(--status-critical);
+}
+
+.noScore {
+  color: var(--ink-2);
+}
+
+.components {
+  display: grid;
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.component[data-missing] {
+  opacity: 0.7;
+}
+
+.componentHead {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-weight: 600;
+}
+
+.subScore {
+  color: var(--ink-2);
+}
+
+.meter {
+  height: 8px;
+  margin: 6px 0;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--focus) 16%, var(--surface));
+  overflow: hidden;
+}
+
+.meter span {
+  display: block;
+  height: 100%;
+  border-radius: 4px;
+  background: var(--focus);
+}
+
+.componentMeta {
+  font-size: var(--step--1);
+  color: var(--ink-3);
+}
+
+.disclaimer {
+  font-size: var(--step--1);
+  color: var(--ink-3);
+  border-top: 1px solid var(--hairline);
+  padding-top: 14px;
+}

@@ -1,0 +1,122 @@
+.page {
+  display: grid;
+  gap: 28px;
+}
+
+.intro {
+  display: grid;
+  gap: 12px;
+}
+
+.title {
+  font-size: var(--step-4);
+}
+
+.lead {
+  font-size: var(--step-1);
+  color: var(--ink-2);
+}
+
+.controls {
+  display: grid;
+  gap: 18px;
+}
+
+.picker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.chips {
+  display: contents;
+  list-style: none;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 4px 4px 12px;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  background: var(--surface);
+}
+
+.chip a {
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.chip button {
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink-2);
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+
+.chip button:hover {
+  background: var(--surface-sunken);
+}
+
+.swatch {
+  width: 14px;
+  height: 4px;
+  border-radius: 2px;
+  flex: none;
+}
+
+.add {
+  flex: 1 1 240px;
+  max-width: 320px;
+}
+
+.chartCard {
+  padding: clamp(14px, 2vw, 24px);
+  display: grid;
+  gap: 14px;
+}
+
+.chartTitle {
+  font-family: var(--font-ui);
+  font-size: var(--step-1);
+  font-weight: 600;
+}
+
+.chartTitle span {
+  font-weight: 400;
+  color: var(--ink-3);
+  margin-left: 6px;
+}
+
+.latest {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 28px;
+  margin: 0;
+  padding: 14px 0 0;
+  border-top: 1px solid var(--hairline);
+  list-style: none;
+}
+
+.latest li {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  column-gap: 8px;
+}
+
+.latest strong {
+  font-size: var(--step-1);
+}
+
+.latest li > span:last-child {
+  grid-column: 2;
+  color: var(--ink-3);
+  font-size: var(--step--1);
+}

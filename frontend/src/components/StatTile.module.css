@@ -1,0 +1,24 @@
+.tile {
+  display: grid;
+  gap: 4px;
+  padding: 16px 18px;
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius);
+}
+
+.label {
+  font-size: var(--step--1);
+  color: var(--ink-2);
+}
+
+.value {
+  font-size: var(--step-2);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.meta {
+  font-size: var(--step--1);
+  color: var(--ink-3);
+}
