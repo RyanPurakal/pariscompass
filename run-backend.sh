@@ -1,23 +1,14 @@
 #!/bin/bash
+# Runs the backend with the dev profile. Loads .env if present.
+# GEMINI_API_KEY is optional in dev: without it, the projection endpoint returns 503.
 
-# Run Backend Script for Paris Compass
-# Make sure GEMINI_API_KEY is set before running
-
-if [ -z "$GEMINI_API_KEY" ]; then
-    echo "⚠️  Warning: GEMINI_API_KEY environment variable is not set!"
-    echo "Please set it first:"
-    echo "  export GEMINI_API_KEY='your_key_here'"
-    echo ""
-    read -p "Continue anyway? (y/n) " -n 1 -r
-    echo
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-        exit 1
-    fi
+if [ -f .env ]; then
+    set -a; source .env; set +a
 fi
 
-echo "🚀 Starting Paris Compass Backend..."
-echo "📍 Backend will be available at http://localhost:8081"
-echo ""
+if [ -z "$GEMINI_API_KEY" ]; then
+    echo "Note: GEMINI_API_KEY is not set. Projections will return 503; everything else works."
+fi
 
+echo "Starting Paris Compass backend on http://localhost:${PORT:-8081} (profile: ${SPRING_PROFILES_ACTIVE:-dev})"
 ./mvnw spring-boot:run
-

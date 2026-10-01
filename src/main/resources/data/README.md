@@ -1,4 +1,4 @@
-# data — CSV Datasets
+# data: CSV Datasets
 
 Static data files loaded into memory at application startup by `DataLoader`.
 
@@ -6,7 +6,7 @@ Static data files loaded into memory at application startup by `DataLoader`.
 
 | File | Source | Columns | Notes |
 |------|--------|---------|-------|
-| `countries.csv` | — | `iso3, name` | Master list of supported countries |
+| `countries.csv` | n/a | `iso3, name` | Master list of supported countries |
 | `co2_data.csv` | Our World in Data | `name, iso3, year, co2_total_mt, co2_per_capita` | Total CO₂ (million tonnes) + per-capita |
 | `renewables_data.csv` | OWID | `iso3, year, renewables_share_pct` | Renewable energy as % of total electricity |
 | `temperature_data.csv` | Berkeley Earth | `iso3, year, temp_anomaly_c` | Temperature anomaly vs. pre-industrial baseline |

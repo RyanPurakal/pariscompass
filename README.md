@@ -52,7 +52,7 @@ npm run dev
 
 ```bash
 git clone <repository-url>
-cd hackru-country-data-main
+cd pariscompass
 ```
 
 ### 2. Set Environment Variable
@@ -176,17 +176,6 @@ Generates AI projection for a country (combines metrics + projection).
 }
 ```
 
-### `GET /api/health`
-Health check endpoint.
-
-**Response:**
-```json
-{
-  "status": "UP",
-  "service": "Paris Compass"
-}
-```
-
 ### `GET /actuator/health`
 Spring Boot Actuator health endpoint.
 
@@ -207,10 +196,10 @@ Data is loaded into memory at application startup for fast access.
 paris-compass/
 ├── src/                              # Spring Boot backend (Java 21)
 │   ├── main/
-│   │   ├── java/hackru/AI/
-│   │   │   ├── AiApplication.java    # Entry point — boots Spring context
+│   │   ├── java/com/ryanpurakal/pariscompass/
+│   │   │   ├── ParisCompassApplication.java # Entry point: boots Spring context
 │   │   │   ├── config/               # Bean wiring: Gemini client, CORS rules
-│   │   │   ├── controller/           # HTTP layer — maps URLs to services
+│   │   │   ├── controller/           # HTTP layer: maps URLs to services
 │   │   │   ├── model/                # DTOs shared between controller & service
 │   │   │   └── service/              # Core logic: data loading, metrics, AI calls
 │   │   └── resources/
@@ -237,7 +226,7 @@ User clicks country
   POST /api/country/{iso3}/projection
         │
         ▼
-  GeminiController          ← HTTP boundary: validates iso3, composes response
+  CountryController          ← HTTP boundary: validates iso3, composes response
         │
         ├──► CountryMetricsService   ← looks up latest CSV data for the country
         │         │
@@ -249,27 +238,24 @@ User clicks country
 ```
 
 **Key design choices:**
-- All CSV data is loaded into memory at startup — no database, no per-request I/O.
+- All CSV data is loaded into memory at startup: no database, no per-request I/O.
 - Gemini projections are cached per country for 1 hour to avoid redundant API calls.
-- CORS is locked to `localhost:5173` (Vite default); update `CorsConfig` for production.
+- CORS origins come from `CORS_ALLOWED_ORIGINS` (dev default `http://localhost:5173`).
 
 ## Configuration
 
-### Backend Configuration (`application.properties`)
+Settings live in `src/main/resources/application.yml` with per-profile overrides (`application-dev.yml`, `application-test.yml`, `application-prod.yml`). Every secret or deployment-specific value is an environment variable; see `.env.example` and `frontend/.env.example`.
 
-```properties
-spring.application.name=Paris Compass
-server.port=8081
-gemini.model=gemini-2.5-flash
-management.endpoints.web.exposure.include=health
-management.endpoint.health.show-details=always
-```
+| Variable | Default | Notes |
+|----------|---------|-------|
+| `SPRING_PROFILES_ACTIVE` | `dev` | `dev`, `test` or `prod` |
+| `GEMINI_API_KEY` | none | Optional in dev (projections return 503), required in prod |
+| `GEMINI_MODEL` | `gemini-2.5-flash` | |
+| `CORS_ALLOWED_ORIGINS` | `http://localhost:5173` in dev | Comma-separated; required in prod, `*` rejected |
+| `PORT` | `8081` | |
+| `VITE_API_BASE_URL` (frontend) | `http://localhost:8081/api` | Baked into the JS bundle at build time |
 
-### Gemini AI Configuration
-
-- Model: `gemini-2.5-flash` (configurable via `gemini.model` property)
-- API Key: Set via `GEMINI_API_KEY` environment variable
-- Caching: Projections are cached for 1 hour per country
+Prod refuses to start if a required variable is missing, and reports all of them at once.
 
 ## Testing
 
@@ -298,25 +284,45 @@ npm test
 
 ### CORS Configuration
 
-CORS is enabled for `http://localhost:5173` (Vite default). To change this, update `CorsConfig.java`.
+Allowed origins come from `CORS_ALLOWED_ORIGINS` (comma-separated). Dev defaults to `http://localhost:5173`.
 
 ### Error Handling
 
-- Missing data fields return `null` in JSON responses
-- Invalid country codes return 404
-- API errors are logged and return 500 with error message
+Every error uses the RFC 9457 `application/problem+json` shape:
+
+```json
+{
+  "type": "about:blank",
+  "title": "Not Found",
+  "status": 404,
+  "detail": "No country found with ISO3 code 'XXX'",
+  "instance": "/api/country/XXX",
+  "code": "COUNTRY_NOT_FOUND",
+  "timestamp": "2026-10-01T19:27:51Z"
+}
+```
+
+| Status | `code` | When |
+|--------|--------|------|
+| 400 | `BAD_REQUEST` | ISO3 path variable is not three letters |
+| 404 | `COUNTRY_NOT_FOUND` | ISO3 is well formed but not in the dataset |
+| 404 / 405 | `NOT_FOUND` / `METHOD_NOT_ALLOWED` | Unknown route or wrong HTTP method |
+| 503 | `PROJECTION_UNAVAILABLE` | Gemini is not configured or the upstream call failed |
+| 500 | `INTERNAL_ERROR` | Anything unexpected; details are logged, never returned |
+
+Missing data fields return `null` in JSON responses.
 
 ## Troubleshooting
 
 ### Backend won't start
 - Ensure Java 21 is installed: `java -version`
 - Check if port 8081 is available
-- Verify `GEMINI_API_KEY` is set
+- In prod, `GEMINI_API_KEY` and `CORS_ALLOWED_ORIGINS` must be set (dev runs without them)
 
 ### Frontend can't connect to backend
 - Ensure backend is running on port 8081
 - Check CORS configuration matches frontend URL
-- Verify API calls use correct base URL (`http://localhost:8081/api`)
+- Verify `VITE_API_BASE_URL` points at the backend (default `http://localhost:8081/api`)
 
 ### No data showing
 - Check CSV files exist in `src/main/resources/data/`
