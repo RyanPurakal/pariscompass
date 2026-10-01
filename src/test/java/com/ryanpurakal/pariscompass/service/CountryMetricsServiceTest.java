@@ -1,5 +1,6 @@
 package com.ryanpurakal.pariscompass.service;
 
+import com.ryanpurakal.pariscompass.exception.CountryNotFoundException;
 import com.ryanpurakal.pariscompass.model.CountryInfo;
 import com.ryanpurakal.pariscompass.model.CountryMetrics;
 import org.junit.jupiter.api.BeforeEach;
@@ -50,7 +51,10 @@ class CountryMetricsServiceTest {
         Map<String, DataLoader.TemperatureData> usaTemp = new HashMap<>();
         usaTemp.put("2022", new DataLoader.TemperatureData(1.2));
         temperatureData.put("USA", usaTemp);
+    }
 
+    /** Stubs every DataLoader map. Only tests that read metrics need this (strict stubs fail on unused ones). */
+    private void stubAllDatasets() {
         when(dataLoader.getCountryNames()).thenReturn(countryNames);
         when(dataLoader.getCo2Data()).thenReturn(co2Data);
         when(dataLoader.getRenewablesData()).thenReturn(renewablesData);
@@ -59,6 +63,7 @@ class CountryMetricsServiceTest {
 
     @Test
     void testGetLatestMetrics_ValidCountry() {
+        stubAllDatasets();
         CountryMetrics metrics = service.getLatestMetrics("USA");
 
         assertNotNull(metrics);
@@ -74,24 +79,24 @@ class CountryMetricsServiceTest {
 
     @Test
     void testGetLatestMetrics_InvalidCountry() {
-        CountryMetrics metrics = service.getLatestMetrics("XXX");
-        assertNull(metrics);
+        when(dataLoader.getCountryNames()).thenReturn(countryNames);
+        assertThrows(CountryNotFoundException.class, () -> service.getLatestMetrics("XXX"));
     }
 
     @Test
     void testGetLatestMetrics_NullIso3() {
-        CountryMetrics metrics = service.getLatestMetrics(null);
-        assertNull(metrics);
+        assertThrows(CountryNotFoundException.class, () -> service.getLatestMetrics(null));
     }
 
     @Test
     void testGetLatestMetrics_EmptyIso3() {
-        CountryMetrics metrics = service.getLatestMetrics("");
-        assertNull(metrics);
+        when(dataLoader.getCountryNames()).thenReturn(countryNames);
+        assertThrows(CountryNotFoundException.class, () -> service.getLatestMetrics(""));
     }
 
     @Test
     void testGetAllCountries() {
+        when(dataLoader.getCountryNames()).thenReturn(countryNames);
         List<CountryInfo> countries = service.getAllCountries();
 
         assertNotNull(countries);
@@ -105,6 +110,7 @@ class CountryMetricsServiceTest {
     @Test
     void testGetLatestMetrics_PartialData() {
         // Test with country that has only CO2 data
+        stubAllDatasets();
         Map<String, DataLoader.Co2Data> indCo2 = new HashMap<>();
         indCo2.put("2022", new DataLoader.Co2Data(2695.0, 1.9));
         co2Data.put("IND", indCo2);

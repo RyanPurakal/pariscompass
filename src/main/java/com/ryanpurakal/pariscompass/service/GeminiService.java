@@ -3,6 +3,7 @@ package com.ryanpurakal.pariscompass.service;
 import com.google.genai.Client;
 import com.google.genai.types.GenerateContentResponse;
 import com.ryanpurakal.pariscompass.config.GeminiConfig;
+import com.ryanpurakal.pariscompass.exception.ProjectionUnavailableException;
 import com.ryanpurakal.pariscompass.model.CountryMetrics;
 import com.ryanpurakal.pariscompass.model.ProjectionResponse;
 import lombok.RequiredArgsConstructor;
@@ -61,8 +62,8 @@ public class GeminiService {
             
             return projectionResponse;
         } catch (Exception e) {
-            log.error("Error calling Gemini API for country: {}", iso3, e);
-            throw new RuntimeException("Failed to generate projection: " + e.getMessage(), e);
+            throw new ProjectionUnavailableException(
+                    "The projection service is temporarily unavailable. Try again later.", e);
         }
     }
 

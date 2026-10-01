@@ -291,9 +291,29 @@ CORS is enabled for `http://localhost:5173` (Vite default). To change this, upda
 
 ### Error Handling
 
-- Missing data fields return `null` in JSON responses
-- Invalid country codes return 404
-- API errors are logged and return 500 with error message
+Every error uses the RFC 9457 `application/problem+json` shape:
+
+```json
+{
+  "type": "about:blank",
+  "title": "Not Found",
+  "status": 404,
+  "detail": "No country found with ISO3 code 'XXX'",
+  "instance": "/api/country/XXX",
+  "code": "COUNTRY_NOT_FOUND",
+  "timestamp": "2026-10-01T19:27:51Z"
+}
+```
+
+| Status | `code` | When |
+|--------|--------|------|
+| 400 | `BAD_REQUEST` | ISO3 path variable is not three letters |
+| 404 | `COUNTRY_NOT_FOUND` | ISO3 is well formed but not in the dataset |
+| 404 / 405 | `NOT_FOUND` / `METHOD_NOT_ALLOWED` | Unknown route or wrong HTTP method |
+| 503 | `PROJECTION_UNAVAILABLE` | Gemini is not configured or the upstream call failed |
+| 500 | `INTERNAL_ERROR` | Anything unexpected; details are logged, never returned |
+
+Missing data fields return `null` in JSON responses.
 
 ## Troubleshooting
 

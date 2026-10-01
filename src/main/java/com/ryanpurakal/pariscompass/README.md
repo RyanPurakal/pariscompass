@@ -8,6 +8,7 @@ Spring Boot 3.5 application serving climate metrics and AI projections.
 |---------|---------------|
 | `config/` | Spring bean definitions: Gemini API client, CORS filter |
 | `controller/` | REST layer — one controller handles all `/api` routes |
+| `exception/` | Typed exceptions and `GlobalExceptionHandler` (RFC 9457 problem+json for every error) |
 | `model/` | DTOs (request/response objects) shared across layers |
 | `service/` | Business logic: CSV data loading, metric aggregation, Gemini calls |
 
@@ -21,6 +22,7 @@ Spring Boot 3.5 application serving climate metrics and AI projections.
 2. Controller delegates to `CountryMetricsService` (data) and/or `GeminiService` (AI)
 3. Services use `DataLoader` (in-memory maps) and the Gemini `Client` bean (external)
 4. Controller assembles a response DTO and returns it
+5. Any exception is rendered by `GlobalExceptionHandler` as `application/problem+json`
 
 ## Configuration
 

@@ -1,5 +1,6 @@
 package com.ryanpurakal.pariscompass.service;
 
+import com.ryanpurakal.pariscompass.exception.CountryNotFoundException;
 import com.ryanpurakal.pariscompass.model.CountryInfo;
 import com.ryanpurakal.pariscompass.model.CountryMetrics;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +15,7 @@ import java.util.stream.Collectors;
  * Assembles a CountryMetrics snapshot from the raw DataLoader maps.
  * Picks the latest available year across all three datasets rather than requiring
  * every dataset to have data for the same year.
+ * Throws CountryNotFoundException for unknown codes so callers never handle null.
  */
 @Slf4j
 @Service
@@ -22,14 +24,9 @@ public class CountryMetricsService {
     private final DataLoader dataLoader;
 
     public CountryMetrics getLatestMetrics(String iso3) {
-        if (iso3 == null || iso3.isBlank()) {
-            return null;
-        }
-
-        String name = dataLoader.getCountryNames().get(iso3);
+        String name = iso3 == null ? null : dataLoader.getCountryNames().get(iso3);
         if (name == null) {
-            log.warn("Country not found: {}", iso3);
-            return null;
+            throw new CountryNotFoundException(iso3);
         }
 
         CountryMetrics.CountryMetricsBuilder builder = CountryMetrics.builder()
