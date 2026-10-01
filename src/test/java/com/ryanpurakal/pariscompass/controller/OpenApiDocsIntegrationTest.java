@@ -54,6 +54,18 @@ class OpenApiDocsIntegrationTest {
     }
 
     @Test
+    void everyOperationDocumentsSuccessAndProblemResponses() throws Exception {
+        mvc.perform(get("/v3/api-docs"))
+                .andExpect(jsonPath("$.paths['/api/rankings'].get.responses['200'].content['application/json'].schema['$ref']")
+                        .value("#/components/schemas/RankingResponse"))
+                .andExpect(jsonPath("$.paths['/api/compare'].get.responses['200'].content['application/json'].schema['$ref']")
+                        .value("#/components/schemas/ComparisonResponse"))
+                .andExpect(jsonPath("$.paths['/api/rankings'].get.responses['400'].content['application/problem+json'].schema['$ref']")
+                        .value("#/components/schemas/Problem"))
+                .andExpect(jsonPath("$.paths['/api/countries/{iso3}/projections'].get.responses['200']").exists());
+    }
+
+    @Test
     void swaggerUiIsServed() throws Exception {
         mvc.perform(get("/swagger-ui/index.html")).andExpect(status().isOk());
     }

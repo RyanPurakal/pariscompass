@@ -45,6 +45,7 @@ app:
       owid-temperature: https://ourworldindata.org/grapher/annual-temperature-anomalies.csv?v=1&csvType=full&useColumnShortNames=true
 
 springdoc:
+  default-produces-media-type: application/json
   api-docs:
     path: /v3/api-docs
     # OpenAPI 3.0 so nullable fields use the standard "nullable: true" keyword (see OpenApiConfig).
