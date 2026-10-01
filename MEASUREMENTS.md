@@ -214,3 +214,62 @@ Repeat `POST /api/countries/USA/projection` with unchanged inputs: served from t
 ### Alignment scores
 
 Computed from the real data; the table and inputs are in [SCORING.md](SCORING.md#results-on-real-data). Command: `curl -s localhost:18081/api/countries/{ISO3}/alignment`.
+
+## Phase 3: Frontend rebuild (2026-10-01)
+
+### Production bundle
+
+```bash
+cd frontend && rm -rf dist && npm run build
+```
+
+Sizes as printed by Vite (minified, then gzip).
+
+| | Before (JS, `hackathon` UI on `main` at 1a617c3) | After (TypeScript rebuild) |
+|---|---|---|
+| JS loaded on the first page | 366.0 KB / 115.0 KB gzip (one chunk, all views) | 422.9 KB / 137.8 KB gzip (atlas) |
+| JS loaded on demand | none | Country page 11.9 KB / 4.4 KB, Compare 3.9 KB / 1.8 KB, shared charts (Recharts) 357.6 KB / 103.3 KB |
+| CSS | 29.2 KB / 9.6 KB | 16.2 KB / 4.5 KB (+ 7.5 KB lazy) |
+| Map data | 56 hand-entered marker coordinates in JS | 90.3 KB TopoJSON / 28.6 KB gzip, 177 country shapes |
+| Fonts | system | Newsreader wght 58.1 KB + italic 64.5 KB, Atkinson Hyperlegible Next 34.0 KB (woff2, latin subset) |
+
+The atlas page ships more JS than the old single page did (+22.8 KB gzip), mostly React Router (31.6 KB gzip) and TanStack Query (9.5 KB gzip), measured by building with one chunk per package:
+
+| Package | gzip |
+|---|---|
+| react-dom | 64.9 KB |
+| recharts (lazy chunk only) | 60.9 KB |
+| react-router | 31.6 KB |
+| app code (atlas) | 11.3 KB |
+| @tanstack/query-core | 9.5 KB |
+| d3-geo | 7.7 KB |
+
+Switching Newsreader from its optical-size variable file to the weight-only file cut the two Latin files from 132.0 KB + 146.9 KB to 58.1 KB + 64.5 KB.
+
+### Lint and types
+
+```bash
+cd frontend && npx tsc -b && npm run lint
+```
+
+Result: 0 type errors, 0 lint errors (the Phase 0 baseline had 3 `no-unused-vars` errors in `App.jsx`). TypeScript 5.9.3 in strict mode with `noUncheckedIndexedAccess`.
+
+### Backend test suite
+
+```bash
+./mvnw clean test
+```
+
+Result: 91 tests, 0 failures, 0 errors (89 in Phase 2, plus 2 OpenAPI contract tests added for the generated frontend types).
+
+### Manual checks in Chrome (not performance numbers)
+
+Run against the Phase 1 database with `VITE_API_URL=http://localhost:18081 npx vite --port 5173`:
+
+- Horizontal overflow at a 390 px viewport, measured as `document.documentElement.scrollWidth` vs `innerWidth` in a 390 px iframe: first 548 vs 386 on the atlas (the header did not fit), fixed; after the fix 386 vs 386 on the atlas, country and compare pages.
+- The map exposes exactly 1 tab stop (`svg path[tabindex="0"]`); with real key presses, Tab then ArrowRight moved focus through countries alphabetically, and the focused country showed the same outline and tooltip as hover, with the matching ranking row highlighted.
+- Removing a country from a 4-country comparison left the other countries' colors unchanged.
+- `/country/XYZ` showed the not-found state without retrying (4xx).
+- No console errors while loading the atlas, two country pages and the 404 page.
+
+Not measured: Lighthouse or axe scores (automated accessibility tests are planned for Phase 4).
