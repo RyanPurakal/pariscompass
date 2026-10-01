@@ -44,6 +44,12 @@ app:
       owid-energy: https://raw.githubusercontent.com/owid/energy-data/master/owid-energy-data.csv
       owid-temperature: https://ourworldindata.org/grapher/annual-temperature-anomalies.csv?v=1&csvType=full&useColumnShortNames=true
 
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+  api-docs:
+    path: /v3/api-docs
+
 management:
   endpoints:
     web:
