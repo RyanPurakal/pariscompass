@@ -1,4 +1,4 @@
-# Backend — `com.ryanpurakal.pariscompass`
+# Backend: `com.ryanpurakal.pariscompass`
 
 Spring Boot 3.5 application serving climate metrics and AI projections.
 
@@ -7,14 +7,14 @@ Spring Boot 3.5 application serving climate metrics and AI projections.
 | Package | Responsibility |
 |---------|---------------|
 | `config/` | Spring bean definitions: Gemini API client, CORS filter |
-| `controller/` | REST layer — one controller handles all `/api` routes |
+| `controller/` | REST layer: one controller handles all `/api` routes |
 | `exception/` | Typed exceptions and `GlobalExceptionHandler` (RFC 9457 problem+json for every error) |
 | `model/` | DTOs (request/response objects) shared across layers |
 | `service/` | Business logic: CSV data loading, metric aggregation, Gemini calls |
 
 ## Entry point
 
-`ParisCompassApplication.java` — standard `@SpringBootApplication` bootstrap. No custom startup logic here; `DataLoader` runs its own `@PostConstruct` to load CSVs.
+`ParisCompassApplication.java`: standard `@SpringBootApplication` bootstrap. No custom startup logic here; `DataLoader` runs its own `@PostConstruct` to load CSVs.
 
 ## Request lifecycle
 

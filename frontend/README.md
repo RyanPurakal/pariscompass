@@ -1,24 +1,24 @@
-# frontend — React SPA
+# frontend: React SPA
 
 Single-page application built with React 19 and Vite. Displays an interactive world map and shows per-country climate metrics with AI projections.
 
 ## Stack
 
-- **React 19** — component model and state
-- **Vite** — dev server (port 5173) and bundler
-- **Leaflet / React Leaflet** — interactive tile map
-- **Fetch API** — all backend calls (no HTTP client library)
+- **React 19**: component model and state
+- **Vite**: dev server (port 5173) and bundler
+- **Leaflet / React Leaflet**: interactive tile map
+- **Fetch API**: all backend calls (no HTTP client library)
 
 ## Directory layout
 
 ```
 frontend/
 ├── index.html              # HTML shell that Vite injects the bundle into
-├── vite.config.js          # Vite config (no proxy — backend URL is hardcoded in App.jsx)
+├── vite.config.js          # Vite config (no proxy; backend URL comes from VITE_API_BASE_URL)
 ├── eslint.config.js        # Lint rules
 ├── package.json
 └── src/
-    ├── main.jsx            # React entry point — mounts <App /> into #root
+    ├── main.jsx            # React entry point: mounts <App /> into #root
     ├── App.jsx             # Entire UI: map, country sidebar, data panel, components
     ├── countryCoordinates.js # Static ISO3 → [lat, lng] lookup table
     ├── App.css             # Component-scoped styles (CSS variables, layout, cards)

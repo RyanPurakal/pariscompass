@@ -17,7 +17,7 @@ import java.util.Map;
 
 /**
  * Loads all CSV datasets from src/main/resources/data/ into memory at startup.
- * After @PostConstruct completes, the four maps are immutable in practice — no other
+ * After @PostConstruct completes, the four maps are immutable in practice: no other
  * code writes to them. Downstream services treat them as read-only.
  */
 @Slf4j

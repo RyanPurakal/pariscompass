@@ -197,9 +197,9 @@ paris-compass/
 ├── src/                              # Spring Boot backend (Java 21)
 │   ├── main/
 │   │   ├── java/com/ryanpurakal/pariscompass/
-│   │   │   ├── ParisCompassApplication.java # Entry point — boots Spring context
+│   │   │   ├── ParisCompassApplication.java # Entry point: boots Spring context
 │   │   │   ├── config/               # Bean wiring: Gemini client, CORS rules
-│   │   │   ├── controller/           # HTTP layer — maps URLs to services
+│   │   │   ├── controller/           # HTTP layer: maps URLs to services
 │   │   │   ├── model/                # DTOs shared between controller & service
 │   │   │   └── service/              # Core logic: data loading, metrics, AI calls
 │   │   └── resources/
@@ -238,7 +238,7 @@ User clicks country
 ```
 
 **Key design choices:**
-- All CSV data is loaded into memory at startup — no database, no per-request I/O.
+- All CSV data is loaded into memory at startup: no database, no per-request I/O.
 - Gemini projections are cached per country for 1 hour to avoid redundant API calls.
 - CORS origins come from `CORS_ALLOWED_ORIGINS` (dev default `http://localhost:5173`).
 

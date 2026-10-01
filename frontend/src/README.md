@@ -1,4 +1,4 @@
-# src — Frontend Source
+# src: Frontend Source
 
 ## Files
 
@@ -9,14 +9,14 @@ React entry point. Mounts `<App />` inside a `StrictMode` wrapper onto the `#roo
 The entire frontend lives here. Contains:
 
 - **Helper components** (defined before `App`, not in separate files):
-  - `MapCenter` — syncs the Leaflet map view to the selected country
-  - `LoadingSkeleton` — animated placeholder shown while data loads
-  - `MetricCard` — single climate metric with icon and color-coded status
+  - `MapCenter`: syncs the Leaflet map view to the selected country
+  - `LoadingSkeleton`: animated placeholder shown while data loads
+  - `MetricCard`: single climate metric with icon and color-coded status
 - **Pure helper functions** (module-level, not React components):
-  - `getMetricStatus(metricType, value)` — maps numeric thresholds to `'good'|'warning'|'danger'`
-  - `extractRiskLevel(text)` — parses Gemini projection text for Low/Medium/High risk label
-  - `formatNumber(num)` — abbreviates large numbers (e.g. 4713 → "4.7K")
-- **`App` component** — manages all state, fetches data, renders the three-panel layout (nav sidebar | map | data panel)
+  - `getMetricStatus(metricType, value)`: maps numeric thresholds to `'good'|'warning'|'danger'`
+  - `extractRiskLevel(text)`: parses Gemini projection text for Low/Medium/High risk label
+  - `formatNumber(num)`: abbreviates large numbers (e.g. 4713 → "4.7K")
+- **`App` component**: manages all state, fetches data, renders the three-panel layout (nav sidebar | map | data panel)
 
 ### `countryCoordinates.js`
 Static lookup table: ISO3 code → `[latitude, longitude]` for the approximate country center. Used by `App.jsx` to place map markers and pan the map when a country is selected.

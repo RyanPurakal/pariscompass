@@ -1,10 +1,10 @@
-# controller — HTTP Layer
+# controller: HTTP Layer
 
 One controller, `CountryController`, handles every public-facing API route under `/api`.
 
 ## Responsibility
 
-Translate HTTP requests into service calls and HTTP responses. No business logic lives here — the controller only:
+Translate HTTP requests into service calls and HTTP responses. No business logic lives here. The controller only:
 1. Validates path/body inputs (e.g. blank ISO3 → 400, unknown country → 404)
 2. Delegates to `CountryMetricsService` and/or `GeminiService`
 3. Returns the response DTO; errors are thrown and rendered by `exception/GlobalExceptionHandler`
@@ -20,4 +20,4 @@ Translate HTTP requests into service calls and HTTP responses. No business logic
 ## What passes through here
 
 Inbound: `String iso3` (path variable)  
-Outbound: `CountryMetrics`, `ProjectionResponse`, or `CountryProjectionResponse` — all from the `model/` package
+Outbound: `CountryMetrics`, `ProjectionResponse`, or `CountryProjectionResponse`, all from the `model/` package

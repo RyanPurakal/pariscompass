@@ -1,4 +1,4 @@
-# model — Data Transfer Objects
+# model: Data Transfer Objects
 
 Plain data containers. No logic, no Spring annotations beyond Lombok.
 

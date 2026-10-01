@@ -1,4 +1,4 @@
-# service — Business Logic
+# service: Business Logic
 
 Three Spring-managed components. Each has a single, narrow job.
 
