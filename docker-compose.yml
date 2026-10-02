@@ -1,5 +1,7 @@
-# Local development services. Phase 5 adds the backend and frontend.
-# Start with: docker compose up -d
+# Local stack: Postgres, the API and the frontend.
+#   docker compose up -d --build          # http://localhost:8080 (frontend), http://localhost:8081 (API)
+#   docker compose run --rm etl           # load or refresh the data (first time: required)
+# Postgres alone for running the API from your IDE: docker compose up -d postgres
 services:
   postgres:
     image: postgres:17-alpine
@@ -17,6 +19,53 @@ services:
       interval: 5s
       timeout: 3s
       retries: 10
+
+  api:
+    build: .
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      DATABASE_URL: jdbc:postgresql://postgres:5432/pariscompass
+      DATABASE_USERNAME: pariscompass
+      DATABASE_PASSWORD: pariscompass
+      CORS_ALLOWED_ORIGINS: http://localhost:8080,http://localhost:5173
+      # Optional: export GEMINI_API_KEY before `docker compose up` for live AI projections.
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+    ports:
+      - "8081:8081"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8081/actuator/health | grep -q UP"]
+      interval: 10s
+      timeout: 3s
+      retries: 30
+      start_period: 20s
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_URL: http://localhost:8081
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+
+  # One-shot data load: same image as the API, run with the etl profile.
+  etl:
+    build: .
+    profiles: ["etl"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: dev,etl
+      DATABASE_URL: jdbc:postgresql://postgres:5432/pariscompass
+      DATABASE_USERNAME: pariscompass
+      DATABASE_PASSWORD: pariscompass
+      APP_ETL_FORCE: ${APP_ETL_FORCE:-false}
 
 volumes:
   pgdata:

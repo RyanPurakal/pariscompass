@@ -1,0 +1,30 @@
+# Render Blueprint for the API (https://render.com/docs/blueprint-spec).
+# Database: Neon (Render's free Postgres is deleted after 30 days). Frontend: Vercel.
+# Secrets use sync: false, so Render asks for their values in the dashboard; none live in this repo.
+services:
+  - type: web
+    name: paris-compass-api
+    runtime: docker
+    plan: free
+    # Same AWS region as the Neon database (us-east-2, Ohio) to keep query latency low.
+    region: ohio
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /actuator/health
+    # Deploy only after the GitHub Actions checks on the commit pass.
+    autoDeployTrigger: checksPass
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      - key: RATE_LIMIT_GLOBAL_PER_HOUR
+        value: "30"
+      - key: DATABASE_URL
+        sync: false
+      - key: DATABASE_USERNAME
+        sync: false
+      - key: DATABASE_PASSWORD
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false

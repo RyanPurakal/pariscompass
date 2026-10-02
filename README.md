@@ -32,21 +32,25 @@ A full-stack web application that provides country-specific climate metrics and 
 
 ## Quick Start
 
+**Everything in Docker** (Postgres, API, frontend):
+
 ```bash
-# 1. Start Postgres (host port 5433)
-docker compose up -d
-
-# 2. Load the data: downloads OWID CO2, energy and ERA5 temperature data, validates, upserts, exits
-SPRING_PROFILES_ACTIVE=dev,etl ./mvnw spring-boot:run
-
-# 3. Run the API on http://localhost:8081 (optionally export GEMINI_API_KEY first)
-./run-backend.sh
-
-# 4. Run the frontend on http://localhost:5173 (new terminal; VITE_API_URL defaults to http://localhost:8081)
-cd frontend && npm install && npm run dev
+docker compose up -d --build        # frontend http://localhost:8080, API http://localhost:8081
+docker compose run --rm etl         # first time: download and load the data
 ```
 
-Copy `.env.example` to `.env` to set variables; `run-backend.sh` loads it.
+**Development** (hot reload; Postgres in Docker):
+
+```bash
+docker compose up -d postgres                          # host port 5433
+SPRING_PROFILES_ACTIVE=dev,etl ./mvnw spring-boot:run  # load the data, then exits
+./run-backend.sh                                       # API on http://localhost:8081
+cd frontend && npm install && npm run dev              # http://localhost:5173
+```
+
+Copy `.env.example` to `.env` to set variables (`run-backend.sh` loads it). Without `GEMINI_API_KEY`, projections use the labeled statistical fallback.
+
+**Deployment** (Render, Neon, Vercel): see [DEPLOYMENT.md](DEPLOYMENT.md).
 
 ## Data Pipeline (ETL)
 
@@ -151,7 +155,10 @@ pariscompass/
 │   └── application*.yml
 ├── src/test/          # Unit tests + Testcontainers integration tests, ETL fixture CSVs
 ├── frontend/          # React 19 + TypeScript SPA (see frontend/README.md)
-├── docker-compose.yml # Local Postgres
+├── Dockerfile         # API image (CDS archive, tuned for 0.1 CPU)
+├── docker-compose.yml # Local stack: Postgres, API, frontend, ETL job
+├── render.yaml        # Render blueprint for the API
+├── DEPLOYMENT.md      # Production setup and operations
 └── MEASUREMENTS.md    # Every reported number and the command that produced it
 ```
 

@@ -126,3 +126,28 @@ jobs:
       - name: Check generated API types are up to date
         run: npm run api:check
         working-directory: frontend
+
+  docker:
+    name: Docker images build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+
+      # The API build includes the CDS training run, so this also proves the context starts in the image.
+      - name: Build API image
+        run: docker build -t paris-compass-api:ci .
+
+      - name: Build frontend image
+        run: docker build -t paris-compass-frontend:ci --build-arg VITE_API_URL=https://example.invalid frontend
+
+      - name: Image sizes
+        run: |
+          {
+            echo "## Docker images"
+            echo ""
+            echo "| Image | Size |"
+            echo "|---|---|"
+            docker image ls --format '| {{.Repository}}:{{.Tag}} | {{.Size}} |' | grep ':ci'
+          } >> "$GITHUB_STEP_SUMMARY"
+
