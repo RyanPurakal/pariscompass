@@ -337,3 +337,54 @@ gh run view 36947640150 --json jobs -q '.jobs[] | "\(.name): \(.conclusion) \(.s
 | Whole run, push to finish | success | 90 s (00:46:06 to 00:47:36 UTC) |
 
 The CI job summaries reported the same numbers as the local runs: backend 107 tests, 96.1% lines, 84.4% branches (33 s of test time); frontend 54 tests, 89.06% lines, 81.01% branches. Single run; GitHub-hosted runner times vary.
+
+## Phase 5: Deployment (2026-10-01)
+
+### API startup under Render's free-tier limits
+
+Render's free web service has 0.1 CPU and 512 MB. Simulated locally with Docker's hard limits, against the local Postgres (Phase 1 data), timing from `docker run` to the first `200` on `/actuator/health`:
+
+```bash
+scripts/measure-startup.sh <name> <port> <image> [docker run args]   # e.g. -e JAVA_TOOL_OPTIONS=... for variants
+```
+
+First, five configurations in parallel (one run each, each container capped separately):
+
+| Configuration | Healthy after | Spring "Started in" | Memory after start |
+|---|---|---|---|
+| A. Baseline (layered jar, SerialGC) | 253.3 s | 239.8 s | 282.7 MiB |
+| B. A + C1 JIT only (`-XX:TieredStopAtLevel=1`) | 80.4 s | 73.1 s | 265.3 MiB |
+| C. A + CDS archive | 142.2 s | 131.9 s | 239.6 MiB |
+| D. CDS + C1 only | 44.8 s | 40.1 s | 213.8 MiB |
+| E. A + lazy bean initialization | 223.5 s | 204.9 s | 271.2 MiB |
+
+Then A and D three times each (in parallel):
+
+| | Run 1 | Run 2 | Run 3 | Median |
+|---|---|---|---|---|
+| A. Baseline | 274.0 s | 305.7 s | 287.7 s | **287.7 s** |
+| D. CDS + C1 only (shipped) | 43.2 s | 46.6 s | 43.6 s | **43.6 s** |
+
+D is 6.6x faster to healthy than A by median, and uses about 25% less memory (211 to 213 MiB vs 276 to 283 MiB). An earlier serial run of A took 361.3 s, so absolute times vary with host load; the ratio held across both batches. Every configuration answered `GET /api/countries/USA` with 200 after starting. With the full laptop CPU the same stack is healthy 8 s after `docker compose up -d --wait`.
+
+Why it works: on a tenth of a CPU, the optimizing C2 JIT compiler competes with startup itself, so limiting the JVM to C1 alone gave the largest single gain (B). CDS avoids re-parsing and verifying about 100 MB of classes (archive: 97.6 MB), and the two combine. The CDS archive is created during `docker build` by starting the full Spring context with the `cds` profile, which needs no database.
+
+### Image sizes
+
+```bash
+docker compose build && docker image ls
+```
+
+| Image | Size |
+|---|---|
+| API without CDS (baseline) | 446 MB |
+| API with CDS archive (shipped) | 567 MB |
+| Frontend (nginx + static build) | 93.6 MB |
+
+The CDS archive costs 121 MB of image size for the startup gain above.
+
+### Local stack checks
+
+- nginx serves `index.html` with `Cache-Control: no-cache` for `/`, `/country/USA` and `/compare?countries=USA,CHN`, and fingerprinted assets with `public, max-age=31536000, immutable`.
+- A CORS preflight from `http://localhost:8080` gets `Access-Control-Allow-Origin: http://localhost:8080`.
+- `docker compose run --rm etl` exited 0; all three sources were skipped because their SHA-256 matched the last ingest (upstream unchanged since the Phase 1 load).
