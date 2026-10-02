@@ -1,5 +1,7 @@
 # Deployment
 
+Live: frontend https://pariscompass-r743.vercel.app, API https://paris-compass-api-p7m4.onrender.com (Render service `paris-compass-api-p7m4`, Neon project `paris-compass` in us-east-2, Vercel project `pariscompass`).
+
 Production runs on three free plans:
 
 | Part | Host | Why this one |

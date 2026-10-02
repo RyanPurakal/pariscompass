@@ -2,6 +2,13 @@
 
 A full-stack web application that provides country-specific climate metrics and AI-powered 5-year projections using Google Gemini. Visualize climate data on an interactive world map and get insights into CO2 emissions, renewable energy adoption, temperature anomalies, and Paris Agreement alignment risks.
 
+## Live
+
+- **App:** https://pariscompass-r743.vercel.app
+- **API:** https://paris-compass-api-p7m4.onrender.com (interactive docs at [/swagger-ui.html](https://paris-compass-api-p7m4.onrender.com/swagger-ui.html))
+
+The API runs on Render's free tier, which sleeps after 15 idle minutes. The first request after that wakes it, so the first page load can take a while; after that it is fast. See [DEPLOYMENT.md](DEPLOYMENT.md).
+
 ## Features
 
 - **Interactive World Map**: Click on countries or select from dropdown to view climate metrics

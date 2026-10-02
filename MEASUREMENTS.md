@@ -388,3 +388,35 @@ The CDS archive costs 121 MB of image size for the startup gain above.
 - nginx serves `index.html` with `Cache-Control: no-cache` for `/`, `/country/USA` and `/compare?countries=USA,CHN`, and fingerprinted assets with `public, max-age=31536000, immutable`.
 - A CORS preflight from `http://localhost:8080` gets `Access-Control-Allow-Origin: http://localhost:8080`.
 - `docker compose run --rm etl` exited 0; all three sources were skipped because their SHA-256 matched the last ingest (upstream unchanged since the Phase 1 load).
+
+### Production (live, 2026-10-01 and 2026-10-02 UTC)
+
+Frontend https://pariscompass-r743.vercel.app (Vercel), API https://paris-compass-api-p7m4.onrender.com (Render free web service, Ohio), database on Neon (free plan, AWS us-east-2, PostgreSQL 18.6).
+
+**Initial load into Neon**, from the developer laptop over the internet:
+
+```bash
+SPRING_PROFILES_ACTIVE=etl DATABASE_URL=... java -jar target/paris-compass-0.0.1-SNAPSHOT.jar
+```
+
+Flyway applied V1 and V2 in 0.662 s. ETL run 1 succeeded in 8,049 ms (15.2 s including JVM startup) with the same counts as the local load: 92,106 rows read, 153,633 values inserted, 60 rows and 36 values rejected. A second run skipped all three sources by SHA-256 (1,342 ms). The password did not appear in the log (checked with grep).
+
+**PostgreSQL 18 compatibility:** Spring Boot 3.5's managed Flyway (11.7.2) logged "PostgreSQL 18.6 is newer than this version of Flyway and support has not been tested". Flyway was pinned to 11.20.3 (no warning against Neon), and Testcontainers and compose moved to PostgreSQL 18; all 107 backend tests pass on 18.
+
+**Smoke test of every endpoint** against the live API (curl): countries 233, metrics 8, USA latest values matching local data, DEU series, SWE alignment 77.0 HIGH, rankings (Qatar, Kuwait, Brunei), compare, unknown country 404 `COUNTRY_NOT_FOUND`, `/v3/api-docs` with 9 paths. One live projection for USA: `VALID`, `gemini-2.5-flash`, `latencyMs` 18,310; the same request again returned `cached: true`. CORS: a preflight from the Vercel origin returned 403 while the placeholder origin was configured and 200 after `CORS_ALLOWED_ORIGINS` was set.
+
+**Frontend on Vercel:** `/`, `/country/USA` and `/compare?countries=USA,CHN` return the app (200), the bundle contains the Render API URL, hashed assets are served with `public, max-age=31536000, immutable`. Checked in Chrome: atlas, USA profile and a 4-country comparison load data; no console errors.
+
+**Cold start on Render**, after 17 minutes without traffic (single measurement):
+
+```bash
+sleep 1020; curl -s -o /dev/null -w "%{http_code} %{time_total}s connect %{time_connect}s first byte %{time_starttransfer}s" $API/actuator/health
+```
+
+| Request | Result |
+|---|---|
+| First request after 17 idle minutes (`/actuator/health`) | 200 in **52.3 s** (connect 0.04 s, first byte 52.26 s) |
+| Next `/actuator/health` | 200 in 1.3 s |
+| Next `/api/countries` | 200 in 2.2 s |
+
+The 52.3 s is Render waking the instance plus JVM startup on 0.1 CPU; it is consistent with the 43.6 s local median plus platform wake time. The warm request times above are single samples from one location and are not latency figures; Phase 6 measures p50/p95.
