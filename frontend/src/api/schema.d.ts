@@ -4,55 +4,15 @@
  */
 
 export interface paths {
-    "/api/countries/{iso3}/projection": {
+    "/api/compare": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get?: never;
-        put?: never;
-        /**
-         * Five-year CO2 projection (rate limited)
-         * @description Returns a stored projection when the inputs are unchanged (cached=true). Otherwise asks the model for schema-validated JSON, retries once, and falls back to labeled trend extrapolation.
-         */
-        post: operations["getCountryProjection"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/rankings": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Countries ranked by one metric in one year
-         * @description year defaults to the latest year with at least 90% of the metric's best coverage. Ties share a rank.
-         */
-        get: operations["rankings"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/metrics": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Metric catalog with units, sources and data coverage */
-        get: operations["metrics"];
+        /** One metric for 2 to 4 countries, side by side */
+        get: operations["compare"];
         put?: never;
         post?: never;
         delete?: never;
@@ -95,17 +55,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/countries/{iso3}/series": {
+    "/api/countries/{iso3}/alignment": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** Time series for one country over a year range */
-        get: operations["getCountrySeries"];
+        /**
+         * Deterministic Paris alignment score (formula v1, see SCORING.md)
+         * @description Computed in Java from historical data. score and band are null when the emissions trend cannot be computed; reason explains why.
+         */
+        get: operations["getAlignment"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/countries/{iso3}/projection": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Five-year CO2 projection (rate limited)
+         * @description Returns a stored projection when the inputs are unchanged (cached=true). Otherwise asks the model for schema-validated JSON, retries once, and falls back to labeled trend extrapolation.
+         */
+        post: operations["getCountryProjection"];
         delete?: never;
         options?: never;
         head?: never;
@@ -129,18 +112,15 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/countries/{iso3}/alignment": {
+    "/api/countries/{iso3}/series": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /**
-         * Deterministic Paris alignment score (formula v1, see SCORING.md)
-         * @description Computed in Java from historical data. score and band are null when the emissions trend cannot be computed; reason explains why.
-         */
-        get: operations["getAlignment"];
+        /** Time series for one country over a year range */
+        get: operations["getCountrySeries"];
         put?: never;
         post?: never;
         delete?: never;
@@ -149,15 +129,35 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/compare": {
+    "/api/metrics": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** One metric for 2 to 4 countries, side by side */
-        get: operations["compare"];
+        /** Metric catalog with units, sources and data coverage */
+        get: operations["metrics"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/rankings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Countries ranked by one metric in one year
+         * @description year defaults to the latest year with at least 90% of the metric's best coverage. Ties share a rank.
+         */
+        get: operations["rankings"];
         put?: never;
         post?: never;
         delete?: never;
@@ -170,200 +170,200 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
-        CountryMetrics: {
-            iso3: string;
-            name: string;
-            /** Format: double */
-            co2PerCapita: number | null;
-            /** Format: double */
-            co2TotalMt: number | null;
-            /** Format: double */
-            temperatureAnomalyC: number | null;
-            /** Format: double */
-            renewablesSharePct: number | null;
-            years: {
-                [key: string]: number;
-            };
-            source: components["schemas"]["SourceInfo"];
-        };
-        CountryProjectionResponse: {
-            metrics: components["schemas"]["CountryMetrics"];
-            projection: components["schemas"]["ProjectionResponse"];
-        };
-        ProjectionOutput: {
-            summary: string;
-            co2Direction: string;
-            projectedCo2Mt: components["schemas"]["YearValue"][];
-            keyDrivers: string[];
-            risks: string[];
-            confidence: string;
-        };
-        ProjectionResponse: {
-            /** Format: int64 */
-            id: number;
-            iso3: string;
-            country: string;
-            generatedBy: string;
-            model: string | null;
-            promptVersion: string;
-            status: string;
-            /** Format: int32 */
-            attempts: number;
-            fallbackReason: string | null;
-            validationErrors: string[];
-            /** Format: date-time */
-            generatedAt: string;
-            cached: boolean;
-            /** Format: int64 */
-            latencyMs: number;
-            /** Format: int32 */
-            baseYear: number;
-            /** Format: double */
-            baseYearCo2Mt: number;
-            /** Format: double */
-            alignmentScore: number | null;
+        AlignmentResponse: {
             /** @enum {string|null} */
-            alignmentBand: "HIGH" | "MEDIUM" | "LOW" | null;
-            projection: components["schemas"]["ProjectionOutput"];
-        };
-        SourceInfo: {
-            co2: string;
-            temp: string;
-            renewables: string;
-        };
-        YearValue: {
-            /** Format: int32 */
-            year: number;
-            /** Format: double */
-            co2Mt: number;
-        };
-        Entry: {
-            /** Format: int32 */
-            rank: number;
+            band: "HIGH" | "MEDIUM" | "LOW" | null;
+            components: components["schemas"]["Component"][];
+            disclaimer: string;
+            formulaVersion: string;
             iso3: string;
             name: string;
+            reason: string | null;
             /** Format: double */
-            value: number;
+            score: number | null;
         };
-        RankingResponse: {
+        ComparisonResponse: {
+            countries: components["schemas"]["CountrySeries"][];
+            /** Format: int32 */
+            from: number | null;
             metric: string;
+            /** Format: int32 */
+            to: number | null;
             unit: string;
-            /** Format: int32 */
-            year: number;
-            order: string;
-            /** Format: int32 */
-            countriesWithData: number;
-            entries: components["schemas"]["Entry"][];
         };
-        Coverage: {
-            /** Format: int64 */
-            values: number;
+        Component: {
+            available: boolean;
+            /** Format: double */
+            effectiveWeight: number | null;
             /** Format: int32 */
-            countries: number;
+            fromYear: number | null;
+            key: string;
+            metric: string;
+            note: string | null;
             /** Format: int32 */
-            firstYear: number | null;
+            points: number;
+            /** Format: double */
+            subScore: number | null;
             /** Format: int32 */
-            lastYear: number | null;
-            /** Format: int32 */
-            defaultYear: number | null;
-        };
-        MetricInfo: {
-            code: string;
-            name: string;
+            toYear: number | null;
             unit: string;
-            description: string;
-            source: components["schemas"]["Source"];
-            coverage: components["schemas"]["Coverage"];
-        };
-        Source: {
-            code: string;
-            name: string;
-            homepage: string;
-            citation: string;
+            /** Format: double */
+            value: number | null;
+            /** Format: double */
+            weight: number;
         };
         CountryInfo: {
             iso3: string;
             name: string;
         };
-        CountrySeriesResponse: {
+        CountryMetrics: {
+            /** Format: double */
+            co2PerCapita: number | null;
+            /** Format: double */
+            co2TotalMt: number | null;
             iso3: string;
             name: string;
-            /** Format: int32 */
-            from: number | null;
-            /** Format: int32 */
-            to: number | null;
-            series: components["schemas"]["MetricSeries"][];
+            /** Format: double */
+            renewablesSharePct: number | null;
+            source: components["schemas"]["SourceInfo"];
+            /** Format: double */
+            temperatureAnomalyC: number | null;
+            years: {
+                [key: string]: number;
+            };
         };
-        MetricSeries: {
-            metric: string;
-            unit: string;
-            points: components["schemas"]["SeriesPoint"][];
-        };
-        SeriesPoint: {
-            /** Format: int32 */
-            year: number;
-            /** Format: double */
-            value: number;
-        };
-        AlignmentResponse: {
-            iso3: string;
-            name: string;
-            formulaVersion: string;
-            /** Format: double */
-            score: number | null;
-            /** @enum {string|null} */
-            band: "HIGH" | "MEDIUM" | "LOW" | null;
-            components: components["schemas"]["Component"][];
-            reason: string | null;
-            disclaimer: string;
-        };
-        Component: {
-            key: string;
-            /** Format: double */
-            weight: number;
-            /** Format: double */
-            effectiveWeight: number | null;
-            available: boolean;
-            metric: string;
-            /** Format: double */
-            value: number | null;
-            unit: string;
-            /** Format: int32 */
-            fromYear: number | null;
-            /** Format: int32 */
-            toYear: number | null;
-            /** Format: int32 */
-            points: number;
-            /** Format: double */
-            subScore: number | null;
-            note: string | null;
-        };
-        ComparisonResponse: {
-            metric: string;
-            unit: string;
-            /** Format: int32 */
-            from: number | null;
-            /** Format: int32 */
-            to: number | null;
-            countries: components["schemas"]["CountrySeries"][];
+        CountryProjectionResponse: {
+            metrics: components["schemas"]["CountryMetrics"];
+            projection: components["schemas"]["ProjectionResponse"];
         };
         CountrySeries: {
             iso3: string;
             name: string;
             points: components["schemas"]["SeriesPoint"][];
         };
+        CountrySeriesResponse: {
+            /** Format: int32 */
+            from: number | null;
+            iso3: string;
+            name: string;
+            series: components["schemas"]["MetricSeries"][];
+            /** Format: int32 */
+            to: number | null;
+        };
+        Coverage: {
+            /** Format: int32 */
+            countries: number;
+            /** Format: int32 */
+            defaultYear: number | null;
+            /** Format: int32 */
+            firstYear: number | null;
+            /** Format: int32 */
+            lastYear: number | null;
+            /** Format: int64 */
+            values: number;
+        };
+        Entry: {
+            iso3: string;
+            name: string;
+            /** Format: int32 */
+            rank: number;
+            /** Format: double */
+            value: number;
+        };
+        MetricInfo: {
+            code: string;
+            coverage: components["schemas"]["Coverage"];
+            description: string;
+            name: string;
+            source: components["schemas"]["Source"];
+            unit: string;
+        };
+        MetricSeries: {
+            metric: string;
+            points: components["schemas"]["SeriesPoint"][];
+            unit: string;
+        };
         /** @description RFC 9457 problem details. 'code' is stable and machine-readable. */
         Problem: {
-            type?: string;
-            title: string;
-            /** Format: int32 */
-            status: number;
-            detail?: string;
-            instance?: string;
             /** @example COUNTRY_NOT_FOUND */
             code: string;
+            detail?: string;
+            instance?: string;
+            /** Format: int32 */
+            status: number;
             /** Format: date-time */
             timestamp?: string;
+            title: string;
+            type?: string;
+        };
+        ProjectionOutput: {
+            co2Direction: string;
+            confidence: string;
+            keyDrivers: string[];
+            projectedCo2Mt: components["schemas"]["YearValue"][];
+            risks: string[];
+            summary: string;
+        };
+        ProjectionResponse: {
+            /** @enum {string|null} */
+            alignmentBand: "HIGH" | "MEDIUM" | "LOW" | null;
+            /** Format: double */
+            alignmentScore: number | null;
+            /** Format: int32 */
+            attempts: number;
+            /** Format: int32 */
+            baseYear: number;
+            /** Format: double */
+            baseYearCo2Mt: number;
+            cached: boolean;
+            country: string;
+            fallbackReason: string | null;
+            /** Format: date-time */
+            generatedAt: string;
+            generatedBy: string;
+            /** Format: int64 */
+            id: number;
+            iso3: string;
+            /** Format: int64 */
+            latencyMs: number;
+            model: string | null;
+            projection: components["schemas"]["ProjectionOutput"];
+            promptVersion: string;
+            status: string;
+            validationErrors: string[];
+        };
+        RankingResponse: {
+            /** Format: int32 */
+            countriesWithData: number;
+            entries: components["schemas"]["Entry"][];
+            metric: string;
+            order: string;
+            unit: string;
+            /** Format: int32 */
+            year: number;
+        };
+        SeriesPoint: {
+            /** Format: double */
+            value: number;
+            /** Format: int32 */
+            year: number;
+        };
+        Source: {
+            citation: string;
+            code: string;
+            homepage: string;
+            name: string;
+        };
+        SourceInfo: {
+            co2: string;
+            renewables: string;
+            temp: string;
+        };
+        YearValue: {
+            /** Format: double */
+            co2Mt: number;
+            /** Format: int32 */
+            year: number;
         };
     };
     responses: never;
@@ -374,24 +374,40 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    getCountryProjection: {
+    compare: {
         parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                iso3: string;
+            query: {
+                /**
+                 * @description 2 to 4 comma-separated ISO3 codes
+                 * @example USA,CHN,IND
+                 */
+                countries: string[];
+                metric: string;
+                from?: number;
+                to?: number;
             };
+            header?: never;
+            path?: never;
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description Metrics snapshot plus projection */
+            /** @description One series per country, in request order */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CountryProjectionResponse"];
+                    "application/json": components["schemas"]["ComparisonResponse"];
+                };
+            };
+            /** @description UNKNOWN_METRIC, INVALID_COUNTRY_LIST, INVALID_YEAR_RANGE */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
                 };
             };
             /** @description COUNTRY_NOT_FOUND */
@@ -401,79 +417,6 @@ export interface operations {
                 };
                 content: {
                     "application/problem+json": components["schemas"]["Problem"];
-                };
-            };
-            /** @description INSUFFICIENT_DATA: fewer than 6 of the last 10 years of CO2 data */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["Problem"];
-                };
-            };
-            /** @description RATE_LIMITED, with a Retry-After header */
-            429: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["Problem"];
-                };
-            };
-        };
-    };
-    rankings: {
-        parameters: {
-            query: {
-                /** @example co2_per_capita_t */
-                metric: string;
-                year?: number;
-                order?: string;
-                limit?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Ranked countries */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["RankingResponse"];
-                };
-            };
-            /** @description UNKNOWN_METRIC, INVALID_ORDER, or a parameter out of range */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["Problem"];
-                };
-            };
-        };
-    };
-    metrics: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MetricInfo"][];
                 };
             };
         };
@@ -538,6 +481,119 @@ export interface operations {
             };
         };
     };
+    getAlignment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                iso3: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Score with every component's input, sub-score and weight */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AlignmentResponse"];
+                };
+            };
+            /** @description COUNTRY_NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getCountryProjection: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                iso3: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Metrics snapshot plus projection */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CountryProjectionResponse"];
+                };
+            };
+            /** @description COUNTRY_NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description INSUFFICIENT_DATA: fewer than 6 of the last 10 years of CO2 data */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description RATE_LIMITED, with a Retry-After header */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getProjectionHistory: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                iso3: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Stored projections */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectionResponse"][];
+                };
+            };
+            /** @description COUNTRY_NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     getCountrySeries: {
         parameters: {
             query?: {
@@ -583,81 +639,34 @@ export interface operations {
             };
         };
     };
-    getProjectionHistory: {
-        parameters: {
-            query?: {
-                limit?: number;
-            };
-            header?: never;
-            path: {
-                iso3: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Stored projections */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ProjectionResponse"][];
-                };
-            };
-            /** @description COUNTRY_NOT_FOUND */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["Problem"];
-                };
-            };
-        };
-    };
-    getAlignment: {
+    metrics: {
         parameters: {
             query?: never;
             header?: never;
-            path: {
-                iso3: string;
-            };
+            path?: never;
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description Score with every component's input, sub-score and weight */
+            /** @description OK */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AlignmentResponse"];
-                };
-            };
-            /** @description COUNTRY_NOT_FOUND */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["Problem"];
+                    "application/json": components["schemas"]["MetricInfo"][];
                 };
             };
         };
     };
-    compare: {
+    rankings: {
         parameters: {
             query: {
-                /**
-                 * @description 2 to 4 comma-separated ISO3 codes
-                 * @example USA,CHN,IND
-                 */
-                countries: string[];
+                /** @example co2_per_capita_t */
                 metric: string;
-                from?: number;
-                to?: number;
+                year?: number;
+                order?: string;
+                limit?: number;
             };
             header?: never;
             path?: never;
@@ -665,26 +674,17 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description One series per country, in request order */
+            /** @description Ranked countries */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ComparisonResponse"];
+                    "application/json": components["schemas"]["RankingResponse"];
                 };
             };
-            /** @description UNKNOWN_METRIC, INVALID_COUNTRY_LIST, INVALID_YEAR_RANGE */
+            /** @description UNKNOWN_METRIC, INVALID_ORDER, or a parameter out of range */
             400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["Problem"];
-                };
-            };
-            /** @description COUNTRY_NOT_FOUND */
-            404: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -1,0 +1,128 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+# Read-only token: CI never needs to write to the repository.
+permissions:
+  contents: read
+
+# A newer push to the same branch or PR cancels the run it supersedes.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend (build, tests, coverage)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      # Unit tests plus Testcontainers integration tests (Docker is preinstalled on ubuntu-latest).
+      # verify also writes the JaCoCo report and enforces the coverage gate in pom.xml.
+      - name: Build and test
+        run: ./mvnw -B -ntp verify
+
+      - name: Test and coverage summary
+        if: always()
+        run: python3 .github/scripts/ci_summary.py backend target/surefire-reports target/site/jacoco/jacoco.csv
+
+      - name: Upload reports
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: backend-reports
+          path: |
+            target/surefire-reports
+            target/site/jacoco
+          retention-days: 14
+
+      # The spec exported by the tests feeds the contract job.
+      - name: Upload OpenAPI spec
+        uses: actions/upload-artifact@v7
+        with:
+          name: openapi-spec
+          path: target/openapi.json
+          retention-days: 7
+
+  frontend:
+    name: Frontend (typecheck, lint, tests, build)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - run: npm ci
+
+      - name: Typecheck
+        run: npx tsc -b
+
+      - name: Lint
+        run: npm run lint
+
+      # Coverage thresholds are enforced in vite.config.ts.
+      - name: Test
+        run: npx vitest run --coverage --reporter=default --reporter=junit --outputFile.junit=test-results/junit.xml
+
+      - name: Test and coverage summary
+        if: always()
+        run: python3 ../.github/scripts/ci_summary.py frontend test-results/junit.xml coverage/coverage-summary.json
+
+      - name: Build
+        run: npm run build
+
+      - name: Upload reports
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: frontend-reports
+          path: |
+            frontend/coverage
+            frontend/test-results
+          retention-days: 14
+
+  contract:
+    name: API contract (frontend types match backend spec)
+    needs: backend
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: openapi-spec
+          path: target
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - run: npm ci
+        working-directory: frontend
+
+      # Regenerates openapi.json and schema.d.ts from the spec the backend tests exported;
+      # fails if they differ from what is committed (run `npm run api:spec && npm run api:types`).
+      - name: Check generated API types are up to date
+        run: npm run api:check
+        working-directory: frontend

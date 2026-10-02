@@ -205,8 +205,32 @@ Prod refuses to start if a required variable is missing, and reports all of them
 ## Testing
 
 ```bash
-./mvnw clean test   # needs Docker running: integration tests start a Postgres container
+./mvnw verify                      # backend: unit + Testcontainers integration tests, JaCoCo report, coverage gate (Docker required)
+cd frontend && npm test            # frontend: Vitest + React Testing Library + MSW
+cd frontend && npm run test:coverage
+cd frontend && npm run api:check   # after ./mvnw verify: fails if the generated API types are stale
 ```
+
+| Layer | What runs | How external systems are handled |
+|---|---|---|
+| Backend unit | Parser and validator, alignment scorer, projection validator, prompt builder, trend fallback, rate limiter, config validation | Pure functions; no Spring |
+| Backend integration | ETL end to end, repositories and native queries, every controller through MockMvc, projection caching and request coalescing, OpenAPI contract | Real PostgreSQL 17 in Testcontainers; Gemini replaced by a scripted fake |
+| Backend HTTP adapters | Gemini SDK adapter, ETL downloader | Local HTTP server (JDK `HttpServer`) standing in for Gemini and for the data hosts |
+| Frontend unit | Map classes, formatting, color slots, API client error mapping | None needed |
+| Frontend components and pages | Combobox, map keyboard navigation, ranking sort, alignment and projection panels, charts, all three pages | MSW intercepts `fetch` with fixtures typed by the generated API schema; unhandled requests fail the test |
+| Accessibility | axe-core on the shell and every page | jsdom (color contrast is checked separately) |
+
+Coverage gates sit just below the measured values (backend in `pom.xml`, frontend in `vite.config.ts`) and only move up. Counts and percentages are in [MEASUREMENTS.md](MEASUREMENTS.md).
+
+### Continuous integration
+
+GitHub Actions (`.github/workflows/ci.yml`) runs on every push and pull request:
+
+- **backend**: `./mvnw verify` on JDK 21 (tests, coverage report, coverage gate)
+- **frontend**: typecheck, lint, tests with coverage, production build on Node 24
+- **contract**: regenerates the frontend's OpenAPI types from the spec the backend tests exported, and fails on any difference
+
+Each job writes its test counts and coverage to the run summary and uploads its reports as artifacts.
 
 ## Development Notes
 

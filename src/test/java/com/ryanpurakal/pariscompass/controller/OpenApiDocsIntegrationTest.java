@@ -65,6 +65,17 @@ class OpenApiDocsIntegrationTest {
                 .andExpect(jsonPath("$.paths['/api/countries/{iso3}/projections'].get.responses['200']").exists());
     }
 
+    /**
+     * Writes the live spec to target/openapi.json. CI regenerates frontend/openapi.json and the TypeScript
+     * types from it and fails if either differs from what is committed, so the frontend cannot drift.
+     */
+    @Test
+    void exportsSpecForFrontendContractCheck() throws Exception {
+        String spec = mvc.perform(get("/v3/api-docs")).andReturn().getResponse().getContentAsString();
+        java.nio.file.Files.writeString(java.nio.file.Path.of("target", "openapi.json"), spec);
+        org.assertj.core.api.Assertions.assertThat(spec).contains("\"/api/rankings\"");
+    }
+
     @Test
     void swaggerUiIsServed() throws Exception {
         mvc.perform(get("/swagger-ui/index.html")).andExpect(status().isOk());
