@@ -1,0 +1,31 @@
+# Used only while building the Docker image, for the CDS training run: start the full context
+# without a database, record which classes load, then exit (spring.context.exit=onRefresh).
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:1/cds-training
+    username: cds
+    password: cds
+    hikari:
+      # Do not try to connect while the pool is created.
+      initialization-fail-timeout: -1
+  flyway:
+    enabled: false
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: none
+    properties:
+      hibernate:
+        boot:
+          allow_jdbc_metadata_access: false
+  main:
+    web-application-type: servlet
+
+app:
+  gemini:
+    api-key: ""
+    required: false
+  cors:
+    allowed-origins: http://localhost
+  etl:
+    run-on-startup: false

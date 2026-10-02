@@ -1,0 +1,9 @@
+# Backend image context: only the Maven wrapper, pom and sources are needed.
+.git
+.github
+target
+frontend
+*.md
+.env
+.env.*
+docker-compose.yml
