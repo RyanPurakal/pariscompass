@@ -36,7 +36,8 @@ export function useWorldGeometry() {
   return useQuery({
     queryKey: queryKeys.geo,
     queryFn: async ({ signal }) => {
-      const res = await fetch(`${import.meta.env.BASE_URL}geo/countries-110m.json`, { signal })
+      const url = new URL(`${import.meta.env.BASE_URL}geo/countries-110m.json`, window.location.origin)
+      const res = await fetch(url, { signal })
       if (!res.ok) throw new Error(`Map shapes failed to load (HTTP ${res.status})`)
       return (await res.json()) as Topology
     },

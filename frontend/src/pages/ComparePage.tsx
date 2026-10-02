@@ -7,6 +7,7 @@ import { EmptyState, ErrorState, LoadingBlock } from '../components/States'
 import { useComparison, useCountries, useMetrics } from '../hooks/queries'
 import { formatValue } from '../lib/format'
 import { SERIES } from '../lib/palette'
+import { assignSlots } from '../lib/slots'
 import { useTheme } from '../lib/theme'
 import styles from './ComparePage.module.css'
 
@@ -135,24 +136,4 @@ export default function ComparePage() {
       </section>
     </div>
   )
-}
-
-/**
- * Keeps each country's existing color slot and gives new countries the lowest free one.
- * Pure, so it can run during render; the previous assignment is passed in.
- */
-function assignSlots(selected: string[], previous: Record<string, number> | Map<string, number>): Map<string, number> {
-  const prev = previous instanceof Map ? previous : new Map(Object.entries(previous))
-  const result = new Map<string, number>()
-  for (const iso of selected) {
-    const slot = prev.get(iso)
-    if (slot !== undefined) result.set(iso, slot)
-  }
-  for (const iso of selected) {
-    if (!result.has(iso)) {
-      const used = new Set(result.values())
-      result.set(iso, [0, 1, 2, 3].find((s) => !used.has(s)) ?? 0)
-    }
-  }
-  return result
 }

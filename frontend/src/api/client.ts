@@ -20,7 +20,8 @@ export type AlignmentBand = NonNullable<AlignmentResponse['band']>
 
 export const API_URL = (import.meta.env.VITE_API_URL ?? 'http://localhost:8081').replace(/\/+$/, '')
 
-const client = createClient<paths>({ baseUrl: API_URL })
+// fetch is looked up per call, not captured at startup, so test tools that patch it (MSW) see every request.
+const client = createClient<paths>({ baseUrl: API_URL, fetch: (request) => globalThis.fetch(request) })
 
 /**
  * Every failure the UI can show. The backend sends RFC 9457 problem+json with a stable `code`;
