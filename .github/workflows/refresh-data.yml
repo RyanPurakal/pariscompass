@@ -1,0 +1,49 @@
+name: Refresh data
+
+# Runs the ETL job against the production database. Manual, plus monthly (OWID updates a few times a year;
+# unchanged files are skipped by hash, so most runs write nothing).
+on:
+  workflow_dispatch:
+    inputs:
+      force:
+        description: Re-ingest every source even if its file is unchanged
+        type: boolean
+        default: false
+  schedule:
+    - cron: '0 6 3 * *' # 06:00 UTC on the 3rd of each month
+
+permissions:
+  contents: read
+
+# Never two refreshes at once (the ETL also holds a Postgres advisory lock).
+concurrency:
+  group: refresh-data
+  cancel-in-progress: false
+
+jobs:
+  etl:
+    name: Run ETL against production
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Package
+        run: ./mvnw -B -ntp -q -DskipTests package
+
+      # The etl profile runs the job without a web server and exits 1 if any source failed,
+      # which fails this workflow and triggers GitHub's failure notification.
+      - name: Run ETL
+        env:
+          SPRING_PROFILES_ACTIVE: etl
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DATABASE_USERNAME: ${{ secrets.DATABASE_USERNAME }}
+          DATABASE_PASSWORD: ${{ secrets.DATABASE_PASSWORD }}
+          APP_ETL_FORCE: ${{ inputs.force || 'false' }}
+        run: java -jar target/paris-compass-*.jar
