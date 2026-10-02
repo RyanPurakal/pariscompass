@@ -16,7 +16,7 @@ Do these in order. No secret goes into the repository; each one is pasted into a
 
 ### 1. Neon (database)
 
-1. Sign up at neon.com with GitHub, and create a project named `paris-compass` in **AWS US East 2 (Ohio)**, the region `render.yaml` uses.
+1. Sign up at neon.com with GitHub, and create a project named `paris-compass` in **AWS US East 2 (Ohio)**, the region `render.yaml` uses. Neon creates PostgreSQL 18; tests (Testcontainers) and `docker-compose.yml` use 18 too, and Flyway is pinned to a version that supports it.
 2. On the project dashboard, open **Connect**, turn **Connection pooling off** (use the direct endpoint), and note the host, database, user and password.
 3. The API needs JDBC form, with user and password separate:
 

@@ -4,7 +4,8 @@
 # Postgres alone for running the API from your IDE: docker compose up -d postgres
 services:
   postgres:
-    image: postgres:17-alpine
+    # Same major version as production (Neon) and the Testcontainers tests.
+    image: postgres:18-alpine
     environment:
       POSTGRES_DB: pariscompass
       POSTGRES_USER: pariscompass
@@ -13,7 +14,9 @@ services:
       # Host port 5433 avoids clashing with a locally installed Postgres on 5432.
       - "${POSTGRES_HOST_PORT:-5433}:5432"
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      # Postgres 18 images keep data under /var/lib/postgresql/18/; a new volume, because a
+      # Postgres 17 data directory cannot be opened by 18 without pg_upgrade.
+      - pgdata18:/var/lib/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U pariscompass -d pariscompass"]
       interval: 5s
@@ -68,4 +71,4 @@ services:
       APP_ETL_FORCE: ${APP_ETL_FORCE:-false}
 
 volumes:
-  pgdata:
+  pgdata18:
