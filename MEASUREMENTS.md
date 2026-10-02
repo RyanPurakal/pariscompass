@@ -273,3 +273,67 @@ Run against the Phase 1 database with `VITE_API_URL=http://localhost:18081 npx v
 - No console errors while loading the atlas, two country pages and the 404 page.
 
 Not measured: Lighthouse or axe scores (automated accessibility tests are planned for Phase 4).
+
+## Phase 4: Testing and CI (2026-10-01)
+
+### Backend tests and coverage
+
+```bash
+./mvnw clean verify   # tests, JaCoCo report (target/site/jacoco), coverage gate
+```
+
+| | Before Phase 4 | After Phase 4 |
+|---|---|---|
+| Tests | 91 | 107 |
+| Line coverage (JaCoCo) | 92.3% (886/960) | 96.1% (931/969) |
+| Branch coverage | 81.8% (251/307) | 84.4% (259/307) |
+| Instruction coverage | 94.0% | 96.3% |
+
+"Before" was measured by adding JaCoCo to the Phase 3 code and running the same command before writing any new tests. The 16 new tests cover the gaps that measurement showed: the Gemini adapter (0/15 lines before), the ETL downloader's HTTP path (19/34), the ETL job runner (7/12), the Gemini bean condition, and the OpenAPI spec export.
+
+Gate: `mvn verify` fails below 95% lines or 83% branches. Checked by temporarily setting the line minimum to 0.97, which failed with "lines covered ratio is 0.96, but expected minimum is 0.97".
+
+### Finding: the Gemini SDK retried silently
+
+`GeminiProjectionModelTest` runs the real SDK against a local HTTP server. With the SDK's default settings, one HTTP 503 produced **3 requests** and the test took about 20 s. That stacked with ProjectionService's own validation retry. `GeminiConfig` now sets one attempt; the same test makes exactly 1 request and the class runs in 2.7 s.
+
+### Frontend tests and coverage
+
+```bash
+cd frontend && npx vitest run --coverage
+```
+
+| | Value |
+|---|---|
+| Tests | 54 in 14 files (unit 18, components 20, pages and shell 16) |
+| Line coverage (V8) | 89.06% (456/512) |
+| Branch coverage | 81.01% (401/495) |
+| Statements / functions | 86.4% / 83.66% |
+| axe-core violations (shell, atlas, country, compare) | 0 (color-contrast rule skipped in jsdom) |
+
+The suite passed 4 consecutive local runs. Gate in `vite.config.ts`: 88% lines, 80% branches, 85% statements, 82% functions. Checked by temporarily setting lines to 95, which failed with "Coverage for lines (89.06%) does not meet global threshold (95%)". Lowest file: `LineChart.tsx` at 79.6% lines, because jsdom gives Recharts' ResponsiveContainer zero width, so plot lines are not rendered in tests (legend and table logic are covered).
+
+### API contract check
+
+```bash
+./mvnw verify && cd frontend && npm run api:check
+```
+
+Proven to catch drift: removing `@Schema(nullable = true)` from `CountryMetrics.co2PerCapita` made `api:check` exit 1 with the diff `co2PerCapita: number | null` to `co2PerCapita: number`; after reverting it exited 0. (A first attempt that added a field broke backend compilation, so the export never ran; in CI a compile failure fails the backend job and the contract job, which depends on it, does not run.)
+
+### CI (GitHub Actions)
+
+First run of `.github/workflows/ci.yml`, run 36947640150 on branch `phase-4-testing-ci`, commit 332966e: **all three jobs passed** on the first attempt.
+
+```bash
+gh run view 36947640150 --json jobs -q '.jobs[] | "\(.name): \(.conclusion) \(.startedAt) -> \(.completedAt)"'
+```
+
+| Job | Result | Duration |
+|---|---|---|
+| Backend (build, tests, coverage) | success | 72 s (00:46:09 to 00:47:21 UTC) |
+| Frontend (typecheck, lint, tests, build) | success | 47 s (00:46:09 to 00:46:56 UTC) |
+| API contract | success | 12 s (00:47:23 to 00:47:35 UTC) |
+| Whole run, push to finish | success | 90 s (00:46:06 to 00:47:36 UTC) |
+
+The CI job summaries reported the same numbers as the local runs: backend 107 tests, 96.1% lines, 84.4% branches (33 s of test time); frontend 54 tests, 89.06% lines, 81.01% branches. Single run; GitHub-hosted runner times vary.
