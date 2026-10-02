@@ -7,6 +7,7 @@ import io.swagger.v3.oas.models.media.MediaType;
 import io.swagger.v3.oas.models.media.ObjectSchema;
 import io.swagger.v3.oas.models.media.Schema;
 import io.swagger.v3.oas.models.media.StringSchema;
+import io.swagger.v3.oas.models.servers.Server;
 import org.springdoc.core.customizers.OpenApiCustomizer;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.info.License;
@@ -25,7 +26,11 @@ public class OpenApiConfig {
 
     @Bean
     public OpenAPI parisCompassOpenApi() {
-        return new OpenAPI().info(new Info()
+        return new OpenAPI()
+                // Fixed, relative server URL: otherwise springdoc embeds whichever host requested the spec,
+                // and the committed frontend/openapi.json would change from machine to machine.
+                .servers(List.of(new Server().url("/").description("Same origin as this document")))
+                .info(new Info()
                 .title("Paris Compass API")
                 .version("v1")
                 .description("""
